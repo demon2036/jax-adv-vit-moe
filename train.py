@@ -1,3 +1,4 @@
+import functools
 import time
 
 import jax
@@ -107,11 +108,18 @@ def train():
         ]
     )
     """
-    global_batch_array_x = convert_to_global_array(x, x_sharding)
-    global_batch_array_y = convert_to_global_array(y, x_sharding)
-    print(global_batch_array_x.shape,global_batch_array_y.shape)
-    return global_batch_array_x
+    # global_batch_array_x = convert_to_global_array(x, x_sharding)
+    # global_batch_array_y = convert_to_global_array(y, x_sharding)
+    # print(global_batch_array_x.shape,global_batch_array_y.shape)
+    # return global_batch_array_x
 
+
+    data=(x,y)
+    data=jax.tree_util.tree_map(functools.partial(convert_to_global_array,x_sharding=x_sharding),data)
+
+    for d in data:
+        print(d.shape)
+    return data
     while True:
         pass
 
