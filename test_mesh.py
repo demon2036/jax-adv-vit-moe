@@ -19,16 +19,16 @@ def get_device_coords_tpu(device: Device):
     print()
     core_on_chip = int(device.core_on_chip)
     coords = tuple(map(int, device.coords))
-    return core_on_chip, *coords
+    return (core_on_chip, *coords)
 
 
 def get_hardware_mesh_tpu(devices):
     mesh_dict = {get_device_coords_tpu(device): device for device in devices}
     print(mesh_dict)
 
-    nd,nh=map(lambda x:x+1,sorted(mesh_dict.keys())[-1])
-    print(nd,nh)
-    mesh=np.empty((nd,nh),dtype=object)
+    nd, nh = map(lambda x: x + 1, sorted(mesh_dict.keys())[-1])
+    print(nd, nh)
+    mesh = np.empty((nd, nh), dtype=object)
     print(mesh)
 
     # mesh_dict=
