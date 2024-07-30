@@ -156,33 +156,29 @@ def train_and_evaluate(args):
             rng, train_rng = jax.random.split(rng)
 
             state, metrics = train_step_jit(state, data, train_rng)
-            metrics = multihost_utils.process_allgather(metrics)
-            if jax.process_index() == 0:
 
-                average_meter.update(**metrics)
-                metrics = average_meter.summary('train/')
+            if step % args.log_interval == 0:
+                metrics = multihost_utils.process_allgather(metrics)
+                if jax.process_index() == 0:
+                    average_meter.update(**metrics)
+                    metrics = average_meter.summary('train/')
+                    wandb.log(metrics, step)
 
-                wandb.log(metrics, step)
+            if step % args.eval_interval == 0:
+                for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
+                    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+                                                  data)
 
-            # if jax.process_index() == 0 and step % args.log_interval == 0:
-            #     average_meter.update(**metrics)
-            #     metrics = average_meter.summary('train/')
-            #     wandb.log(metrics, step)
-            #
-            # if step % args.eval_interval == 0:
-            #     for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
-            #         data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
-            #                                       data)
-            #
-            #         eval_metrics = eval_step_jit(state, data)
-            #
-            #         if jax.process_index() == 0:
-            #             average_meter.update(**eval_metrics)
-            #     if jax.process_index() == 0:
-            #         metrics = average_meter.summary("val/")
-            #         num_samples = metrics.pop("val/num_samples")
-            #         metrics = jax.tree_util.tree_map(lambda x: x / num_samples, metrics)
-            #         wandb.log(metrics, step)
+                    eval_metrics = eval_step_jit(state, data)
+                    eval_metrics = multihost_utils.process_allgather(eval_metrics)
+
+                    if jax.process_index() == 0:
+                        average_meter.update(**eval_metrics)
+                if jax.process_index() == 0:
+                    eval_metrics = average_meter.summary("val/")
+                    num_samples = eval_metrics.pop("val/num_samples")
+                    eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, metrics)
+                    wandb.log(eval_metrics, step)
 
     return eval_metrics
 
