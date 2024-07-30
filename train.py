@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import tqdm
+import wandb
 from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 
@@ -83,7 +84,11 @@ def convert_to_global_array(x, x_sharding):
 
 
 def train_and_evaluate(args):
-    average_meter = AverageMeter(use_latest=["learning_rate"])
+    if jax.process_index() == 0:
+        wandb.init(name=args.name, project=args.project, config=args.__dict__,
+                   settings=wandb.Settings(_disable_stats=True),
+                   config_exclude_keys=['train_dataset_shards', 'valid_dataset_shards', 'train_origin_dataset_shards'])
+        average_meter = AverageMeter(use_latest=["learning_rate"])
 
     rng = jax.random.key(0)
 
@@ -140,25 +145,36 @@ def train_and_evaluate(args):
                             out_shardings=None, )
 
     with mesh:
+        init_step = 1
         disable = not jax.process_index() == 0
 
-        # with tqdm.tqdm(range(1000), disable=disable) as pbar:
-        #     for _ in pbar:
-        #         data = next(train_dataloader_iter)
-        #         # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
-        #         rng, train_rng = jax.random.split(rng)
-        #
-        #         state, metrics = train_step_jit(state, data, train_rng)
-        #
-        #         average_meter.update(metrics)
-        #         metrics = average_meter.summary('train/')
-        #
-        #         pbar.update()
+        for step in tqdm.tqdm(range(init_step, args.training_steps), initial=init_step, total=args.training_steps):
 
-        for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
-            data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+            data = next(train_dataloader_iter)
+            # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+            rng, train_rng = jax.random.split(rng)
 
-            eval_metrics = eval_step_jit(state, data)
+            state, metrics = train_step_jit(state, data, train_rng)
+
+            if jax.process_index() == 0 and step % args.log_interval == 0:
+                average_meter.update(**metrics)
+                metrics = average_meter.summary('train/')
+                wandb.log(metrics, step)
+
+            if step % args.eval_interval == 0:
+                for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
+                    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+                                                  data)
+
+                    eval_metrics = eval_step_jit(state, data)
+
+                    if jax.process_index() == 0:
+                        average_meter.update(**eval_metrics)
+                if jax.process_index() == 0:
+                    metrics = average_meter.summary("val/")
+                    num_samples = metrics.pop("val/num_samples")
+                    metrics = jax.tree_util.tree_map(lambda x: x / num_samples, metrics)
+                    wandb.log(metrics, step)
 
     return eval_metrics
 
