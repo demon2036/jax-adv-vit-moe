@@ -24,7 +24,7 @@ python -u train.py \
     --clip-grad 1.0 \
     --warmup-steps $((50000 * $WARMUP_EPOCH / $TRAIN_BATCH_SIZE)) \
     --training-steps $((50000 * $EPOCH / $TRAIN_BATCH_SIZE)) \
-    --eval-interval $((50000 * 1 / $TRAIN_BATCH_SIZE)) \
+    --eval-interval $((50000 * 50 / $TRAIN_BATCH_SIZE)) \
     --project cifar1000-ablation-beta-new \
     --name $(basename $0 .sh) \
     --output-dir "$GCS_DATASET_DIR/ablation/beta" \
