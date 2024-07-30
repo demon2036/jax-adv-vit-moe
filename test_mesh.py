@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import flax
 import flax.linen as nn
+import numpy as np
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from jax.experimental import mesh_utils
 
@@ -24,6 +25,11 @@ def get_device_coords_tpu(device: Device):
 def get_hardware_mesh_tpu(devices):
     mesh_dict = {get_device_coords_tpu(device): device for device in devices}
     print(mesh_dict)
+
+    nd,nh=map(lambda x:x+1,sorted(mesh_dict.keys())[-1])
+    print(nd,nh)
+    mesh=np.empty((nd,nh),dtype=object)
+    print(mesh)
 
     # mesh_dict=
     pass
