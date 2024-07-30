@@ -16,7 +16,7 @@ from train_state import create_train_state, EMATrainState
 from training import apply_model_trade, eval_step
 from dataset import get_train_dataloader
 from utils.utils2 import AverageMeter
-
+from jax.experimental import multihost_utils
 
 def block_all(xs):
     jax.tree_util.tree_map(lambda x: x.block_until_ready(), xs)
@@ -156,9 +156,17 @@ def train_and_evaluate(args):
 
             state, metrics = train_step_jit(state, data, train_rng)
 
-            average_meter.update(**metrics)
-            metrics = average_meter.summary('train/')
+
+
+
+
+
             if jax.process_index() == 0:
+
+                metrics=multihost_utils.process_allgather(metrics)
+                average_meter.update(**metrics)
+                metrics = average_meter.summary('train/')
+
                 wandb.log(metrics, step)
 
 
