@@ -55,6 +55,7 @@ def get_logical_mesh_default(partitions: Tuple[int, ...], replicas: Tuple[int, .
     num_replicas=np.prod(replicas)
     devices=devices.reshape((num_partitions,num_replicas))
     print(f'{devices=}')
+    return Mesh(devices=devices,axis_names=('expert','replica'))
 
 
 def get_logical_mesh(partitions, hardware_mesh: np.ndarray):
@@ -68,6 +69,8 @@ def get_logical_mesh(partitions, hardware_mesh: np.ndarray):
     hardware_mesh = hardware_mesh.transpose(hardware_axes_order)
     print(hardware_mesh)
     logical_mesh = get_logical_mesh_default(partitions, replicas, hardware_mesh)
+    print(logical_mesh)
+    return logical_mesh
 
 
 def get_auto_logical_mesh_tpu(num_partitions: int, hardware_mesh: np.ndarray):
