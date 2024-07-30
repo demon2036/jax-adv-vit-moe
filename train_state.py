@@ -1,3 +1,5 @@
+import functools
+
 import jax
 
 import orbax.checkpoint as ocp
@@ -30,6 +32,8 @@ class EMATrainState(flax.training.train_state.TrainState):
 
 
 def create_train_state(rng,
+                       x_sharding,
+                       mesh,
                        layers=12,
                        dim=192,
                        heads=3,
@@ -52,7 +56,8 @@ def create_train_state(rng,
                        use_fc_norm: bool = False,
                        reduce_include_prefix: bool = False,
                        b1=0.95,
-                       b2=0.98
+                       b2=0.98,
+
 
                        ):
     """Creates initial `TrainState`."""
@@ -73,9 +78,11 @@ def create_train_state(rng,
         reduce_include_prefix=reduce_include_prefix
     )
 
-    image_shape = [1, 32, 32, 3]
+    image_shape = [jax.device_count(), 32, 32, 3]
     if jax.process_index() == 0:
         print(model.tabulate(rng, jnp.ones(image_shape)))
+
+    input_data = jnp.ones(image_shape)
 
     # cnn = CNN()
 
@@ -83,15 +90,6 @@ def create_train_state(rng,
 
     # TODO: implement pjit train state init
 
-
-
-
-
-
-
-
-
-    params = model.init(rng, jnp.ones(image_shape))['params']
 
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
@@ -124,7 +122,32 @@ def create_train_state(rng,
         end_value=1e-5,
     )
 
-    tx = create_optimizer_fn(learning_rate)
+    def init_fn(x, model):
+        variables = model.init(rng, x)
+        params = variables['params']
 
-    return EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
-                                trade_beta=trade_beta, label_smoothing=label_smoothing)
+        tx = create_optimizer_fn(learning_rate)
+        EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
+                             trade_beta=trade_beta, label_smoothing=label_smoothing)
+
+    abstract_variables = jax.eval_shape(
+        functools.partial(init_fn, model=model, ), input_data)
+
+    state_sharding = nn.get_sharding(abstract_variables, mesh)
+
+    jit_init_fn = jax.jit(init_fn, static_argnums=(1,),
+                          in_shardings=x_sharding,  # PRNG key and x
+                          out_shardings=state_sharding)
+
+    state = jit_init_fn(input_data, model)
+    print(state)
+
+    while True:
+        pass
+
+    return
+
+
+if __name__=="__main__":
+    rng=jax.random.PRNGKey(1)
+    device_mesh=
