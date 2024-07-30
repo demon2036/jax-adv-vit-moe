@@ -77,21 +77,20 @@ def train():
 
             pbar.update()
 
-
-        if jax.process_index() == 0:
-            print(device_mesh)
-            # print(x_sharding.addressable_devices)
-            # print()
-            # print(mesh)
-            # jax.debug.visualize_sharding((shape[0], shape[1]), sharding=x_sharding)
-            # jax.debug.visualize_array_sharding(global_batch_array[:, :, 0])
-            #
-            # print(x_sharding.addressable_devices)
-            # print(state_sharding)
-            # jax.debug.visualize_array_sharding(grad['Dense_0']['kernel'])
-            # print(params)
-            print(global_batch_array.shape)
-            print(end - start)
+        # if jax.process_index() == 0:
+        #     print(device_mesh)
+        #     # print(x_sharding.addressable_devices)
+        #     # print()
+        #     # print(mesh)
+        #     # jax.debug.visualize_sharding((shape[0], shape[1]), sharding=x_sharding)
+        #     # jax.debug.visualize_array_sharding(global_batch_array[:, :, 0])
+        #     #
+        #     # print(x_sharding.addressable_devices)
+        #     # print(state_sharding)
+        #     # jax.debug.visualize_array_sharding(grad['Dense_0']['kernel'])
+        #     # print(params)
+        #     print(global_batch_array.shape)
+        #     print(end - start)
 
             # print(grad)
 
