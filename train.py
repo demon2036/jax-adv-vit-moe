@@ -49,14 +49,15 @@ def train():
     y = jnp.ones(shape[0])
     x_sharding = mesh_sharding(PartitionSpec('data'))
 
-    global_batch_shape = (128 * jax.process_count(), *res)
-    print(global_batch_shape)
+    global_batch_shape_x = (128 * jax.process_count(), *res)
+    global_batch_shape_y = (128 * jax.process_count(), )
+    print(global_batch_shape_x,global_batch_shape_y)
 
     per_replica_batches_x = np.split(x, jax.local_device_count())
     per_replica_batches_y = np.split(y, jax.local_device_count())
 
     global_batch_array_x = jax.make_array_from_single_device_arrays(
-        global_batch_shape, sharding=x_sharding,
+        global_batch_shape_x, sharding=x_sharding,
         arrays=[
             jax.device_put(batch, device)
             for batch, device in zip(per_replica_batches_x, x_sharding.addressable_devices)
@@ -64,7 +65,7 @@ def train():
     )
 
     global_batch_array_y = jax.make_array_from_single_device_arrays(
-        global_batch_shape, sharding=x_sharding,
+        global_batch_shape_y, sharding=x_sharding,
         arrays=[
             jax.device_put(batch, device)
             for batch, device in zip(per_replica_batches_y, x_sharding.addressable_devices)
