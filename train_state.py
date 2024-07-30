@@ -132,7 +132,7 @@ def create_train_state(rng,
                                     trade_beta=trade_beta, label_smoothing=label_smoothing)
 
     abstract_variables = jax.eval_shape(
-        functools.partial(init_fn, model=model, ), input_data)
+        functools.partial(init_fn, model=model, optimizer=tx), input_data)
 
     state_sharding = nn.get_sharding(abstract_variables, mesh)
 
