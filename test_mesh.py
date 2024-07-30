@@ -48,7 +48,7 @@ def get_logical_mesh_default(partitions: Tuple[int, ...], replicas: Tuple[int, .
     devices = hardware_mesh.reshape(shape)
     print(devices)
     devices = devices.transpose(tuple(range(0, 2 * hardware_mesh.ndim, 2))
-                                + tuple(range(1, 2 * hardware_mesh, 2))
+                                + tuple(range(1, 2 * hardware_mesh.ndim, 2))
                                 )
     print(devices)
 
