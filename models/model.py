@@ -20,11 +20,10 @@ from typing import Any, Literal
 
 import flax.linen as nn
 import flax.linen.initializers as init
-import jax.experimental.pallas.ops.tpu.flash_attention
 import jax.numpy as jnp
 from chex import Array
 
-from utils2 import fixed_sincos2d_embeddings
+from utils.utils2 import fixed_sincos2d_embeddings
 
 DenseGeneral = partial(nn.DenseGeneral, kernel_init=init.truncated_normal(0.02))
 Dense = partial(nn.Dense, kernel_init=init.truncated_normal(0.02))
