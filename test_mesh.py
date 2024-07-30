@@ -25,7 +25,7 @@ def go():
     if jax.process_index()==0:
         print(mesh)
 
-        get_device_coords_tpu()
+        get_device_coords_tpu(jax.devices()[0])
 
 
     pass
