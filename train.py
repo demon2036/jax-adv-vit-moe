@@ -3,6 +3,7 @@ import time
 import jax
 import jax.numpy as jnp
 import numpy as np
+import tqdm
 from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 
@@ -61,16 +62,21 @@ def train():
     train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
     with mesh:
+        # grad = block_all(train_step_jit(global_batch_array, state))
+        #
+        # for i in range(100):
+        #     grad = block_all(train_step_jit(global_batch_array, state))
+        #
+        # start = time.time()
+        # for i in range(1000):
+        #     grad = block_all(train_step_jit(global_batch_array, state))
+        # end = time.time()
 
-        grad = block_all(train_step_jit(global_batch_array, state))
+        with tqdm.tqdm(range(1000), ) as pbar:
+            state = block_all(train_step_jit(global_batch_array, state))
 
-        for i in range(100):
-            grad = block_all(train_step_jit(global_batch_array, state))
+            pbar.update()
 
-        start = time.time()
-        for i in range(1000):
-            grad = block_all(train_step_jit(global_batch_array, state))
-        end = time.time()
 
         if jax.process_index() == 0:
             print(device_mesh)
