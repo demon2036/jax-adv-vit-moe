@@ -98,11 +98,7 @@ def train_and_evaluate(args):
                                                                   test_shard_path=args.valid_dataset_shards,
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
-    data = next(train_dataloader_iter)
 
-    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
-
-    print(type(data))
 
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
@@ -130,9 +126,6 @@ def train_and_evaluate(args):
                                                clip_grad=args.clip_grad,
                                                )
 
-
-
-
     # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
     train_step_jit = jax.jit(apply_model_trade,
@@ -144,10 +137,14 @@ def train_and_evaluate(args):
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                state, metrics = block_all(train_step_jit(state, data, rng))
+                data = next(train_dataloader_iter)
+
+                data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+
+                state, metrics = train_step_jit(state, data, rng)
 
                 pbar.update()
-                break
+
     """ return data
 
     """
