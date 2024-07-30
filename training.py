@@ -4,6 +4,8 @@ import flax
 import flax.linen as nn
 import optax
 import einops
+
+from attacks.pgd import pgd_attack3
 from trade.trade import trade
 import numpy as np
 
@@ -43,8 +45,6 @@ def apply_model_trade(state, data, key):
     metrics['accuracy'] = accuracy_std
     metrics['adversarial accuracy'] = accuracy_adv
 
-    #TODO : reimplent metric
-
     state = state.apply_gradients(grads=grads)
 
     new_ema_params = jax.tree_util.tree_map(
@@ -52,7 +52,32 @@ def apply_model_trade(state, data, key):
         state.ema_params, state.params)
     state = state.replace(ema_params=new_ema_params)
 
-    # metrics = metrics | state.opt_state.hyperparams
-    metrics['key'] = key
+    metrics = metrics | state.opt_state.hyperparams
 
     return state, metrics
+
+
+def eval_step(state, data):
+    # inputs, labels = data
+
+    inputs, labels = data
+    inputs = inputs.astype(jnp.float32)
+    labels = labels.astype(jnp.int64)
+
+    inputs = einops.rearrange(inputs, 'b c h w->b h w c')
+
+    logits = state.apply_fn({"params": state.ema_params}, inputs)
+    clean_accuracy = jnp.argmax(logits, axis=-1) == labels
+
+    maxiter = 20
+
+    adversarial_images = pgd_attack3(inputs, labels, state, epsilon=EPSILON, maxiter=maxiter,
+                                     step_size=EPSILON * 2 / maxiter)
+    logits_adv = state.apply_fn({"params": state.ema_params}, adversarial_images)
+    adversarial_accuracy = jnp.argmax(logits_adv, axis=-1) == labels
+
+    metrics = {"adversarial accuracy": adversarial_accuracy, "accuracy": clean_accuracy, "num_samples": labels != -1}
+
+    metrics = jax.tree_util.tree_map(lambda x: (x * (labels != -1)).sum(), metrics)
+
+    return metrics

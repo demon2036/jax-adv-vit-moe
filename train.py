@@ -12,8 +12,9 @@ from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from prefetch import prefetch_to_device
 from train_state import create_train_state, EMATrainState
 
-from training import apply_model_trade
+from training import apply_model_trade, eval_step
 from dataset import get_train_dataloader
+from utils.utils2 import AverageMeter
 
 
 def block_all(xs):
@@ -82,6 +83,8 @@ def convert_to_global_array(x, x_sharding):
 
 
 def train_and_evaluate(args):
+    average_meter = AverageMeter(use_latest=["learning_rate"])
+
     rng = jax.random.key(0)
 
     rng, init_rng = jax.random.split(rng)
@@ -103,7 +106,7 @@ def train_and_evaluate(args):
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
-                                               heads=3,
+                                               heads=args.heads,
                                                labels=args.labels,
                                                layerscale=args.layerscale,
                                                patch_size=args.patch_size,
@@ -132,32 +135,32 @@ def train_and_evaluate(args):
                              in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
 
-    # x = jnp.zeros((128, 3, 32, 32))
-    # y = jnp.zeros((128,))
-
-
-    # data = [x, y]
-    # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
-    #                               data)
+    eval_step_jit = jax.jit(eval_step,
+                            in_shardings=(state_sharding, [x_sharding, x_sharding],),
+                            out_shardings=None, donate_argnums=0)
 
     with mesh:
         disable = not jax.process_index() == 0
 
-        with tqdm.tqdm(range(1000), disable=disable) as pbar:
-            for _ in pbar:
-                data = next(train_dataloader_iter)
-                # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
-                rng, train_rng = jax.random.split(rng)
+        # with tqdm.tqdm(range(1000), disable=disable) as pbar:
+        #     for _ in pbar:
+        #         data = next(train_dataloader_iter)
+        #         # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+        #         rng, train_rng = jax.random.split(rng)
+        #
+        #         state, metrics = train_step_jit(state, data, train_rng)
+        #
+        #         average_meter.update(metrics)
+        #         metrics = average_meter.summary('train/')
+        #
+        #         pbar.update()
 
-                state, metrics = train_step_jit(state, data, train_rng)
+        for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
+            data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
 
-                pbar.update()
+            eval_metrics = eval_step_jit(state, data)
 
-    """ return data
-
-    """
-
-    return metrics
+    return eval_metrics
 
 
 if __name__ == "__main__":
