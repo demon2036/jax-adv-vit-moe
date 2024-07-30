@@ -58,5 +58,7 @@ def apply_model_trade(state, data, key):
     state = state.replace(ema_params=new_ema_params)
 
     # metrics = metrics | state.opt_state.hyperparams
+    metrics=dict()
+    metrics['key'] = key
 
-    return state
+    return state, key

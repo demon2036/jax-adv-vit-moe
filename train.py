@@ -93,7 +93,7 @@ def train():
 
     train_step_jit = jax.jit(apply_model_trade,
                              in_shardings=(state_sharding, (x_sharding, x_sharding), mesh_sharding(())),
-                             out_shardings=state_sharding, )
+                             out_shardings=(state_sharding,x_sharding), )
 
     with mesh:
         # grad = block_all(train_step_jit(global_batch_array, state))
@@ -110,11 +110,12 @@ def train():
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                state = block_all(train_step_jit(state, data, rng))
+                state,metrics = block_all(train_step_jit(state, data, rng))
 
                 pbar.update()
+                break
 
-    return state
+    return metrics
 
 
 if __name__ == "__main__":
@@ -124,4 +125,5 @@ if __name__ == "__main__":
     # if jax.process_index() == 0:
     #     print(jax.devices())
 
-    state = train()
+    metrics = train()
+    print(metrics)
