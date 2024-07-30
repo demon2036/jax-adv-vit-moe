@@ -137,7 +137,7 @@ def train_and_evaluate(args):
 
     eval_step_jit = jax.jit(eval_step,
                             in_shardings=(state_sharding, [x_sharding, x_sharding],),
-                            out_shardings=None, donate_argnums=0)
+                            out_shardings=None, )
 
     with mesh:
         disable = not jax.process_index() == 0
