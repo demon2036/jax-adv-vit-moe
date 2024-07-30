@@ -26,10 +26,12 @@ def get_hardware_mesh_tpu(devices):
     mesh_dict = {get_device_coords_tpu(device): device for device in devices}
     print(mesh_dict)
 
-    nc,nx,ny,nz = map(lambda x: x + 1, sorted(mesh_dict.keys())[-1])
-    print(nc,nx,ny,nz)
-    mesh = np.empty((nc,nx,ny,nz), dtype=object)
+    nc, nx, ny, nz = map(lambda x: x + 1, sorted(mesh_dict.keys())[-1])
+    print(nc, nx, ny, nz)
+    mesh = np.empty((nc, nx, ny, nz), dtype=object)
     print(mesh)
+    print(mesh_dict)
+    # for (c,x,y,z) ,device in mesh_dict
 
     # mesh_dict=
     pass
