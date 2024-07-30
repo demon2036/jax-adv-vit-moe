@@ -22,7 +22,7 @@ def train_step(x, state: EMATrainState):
 
     grad = jax.grad(loss_fn)(state.params)
 
-    state = state.apply_gradients(grad)
+    state = state.apply_gradients(grads=grad)
     return state
 
 
@@ -95,7 +95,7 @@ def train():
 if __name__ == "__main__":
     jax.distributed.initialize()
 
-    if jax.process_index() == 0:
-        print(jax.devices())
+    # if jax.process_index() == 0:
+    #     print(jax.devices())
 
     out3 = train()
