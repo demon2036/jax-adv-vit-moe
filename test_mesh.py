@@ -34,7 +34,7 @@ def get_hardware_mesh_tpu(devices):
     print(mesh)
     print(mesh_dict)
     for (c, x, y, z), device in mesh_dict:
-        mesh_dict[(c, x, y, z)] = device
+        mesh[(c, x, y, z)] = device
     return mesh
 
 
