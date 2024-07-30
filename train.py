@@ -104,7 +104,34 @@ def train_and_evaluate(args):
 
     print(type(data))
 
-    state, state_sharding = create_train_state(init_rng, x_sharding, mesh, dim=768)
+    state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
+                                               layers=args.layers,
+                                               dim=args.dim,
+                                               heads=args.heads,
+                                               labels=args.labels,
+                                               layerscale=args.layerscale,
+                                               patch_size=args.patch_size,
+                                               image_size=args.image_size,
+                                               posemb=args.posemb,
+                                               pooling=args.pooling,
+                                               dropout=args.dropout,
+                                               droppath=args.droppath,
+                                               warmup_steps=args.warmup_steps,
+                                               training_steps=args.training_steps,
+                                               learning_rate=args.learning_rate,
+                                               weight_decay=args.weight_decay,
+                                               ema_decay=args.ema_decay,
+                                               trade_beta=args.beta,
+                                               label_smoothing=args.label_smoothing,
+                                               use_fc_norm=args.use_fc_norm,
+                                               reduce_include_prefix=args.reduce_include_prefix,
+                                               b1=args.adam_b1,
+                                               b2=args.adam_b2,
+                                               clip_grad=args.clip_grad,
+                                               )
+
+
+
 
     # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
