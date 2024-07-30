@@ -83,13 +83,6 @@ def create_train_state(rng,
 
     input_data = jnp.ones(image_shape)
 
-    # cnn = CNN()
-
-    # image_shape = [1, 28, 28, 1]
-
-    # TODO: implement pjit train state init
-    print(3)
-
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
             learning_rate: optax.Schedule,
@@ -141,12 +134,5 @@ def create_train_state(rng,
                           out_shardings=state_sharding)
 
     state = jit_init_fn(input_data, model, tx)
-    print(2)
 
-    print(state)
-    print(1)
-
-    while True:
-        pass
-
-    return
+    return state,state_sharding

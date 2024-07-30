@@ -13,29 +13,25 @@ from jax.sharding import Mesh, PartitionSpec, NamedSharding
 import flax.linen as nn
 from models.model import ViT
 from test_mesh import get_auto_logical_mesh_tpu, get_hardware_mesh_tpu
-from train_state import create_train_state
+from train_state import create_train_state, EMATrainState
+
 
 def block_all(xs):
     jax.tree_util.tree_map(lambda x: x.block_until_ready(), xs)
     return xs
 
 
-# class DPDense(nn.Module):
-#     dim: int
-#     precision: jax.lax.Precision = jax.lax.Precision.HIGHEST
-#
-#     @nn.compact
-#     def __call__(self, x, *args, **kwargs):
-#         for i in range(12):
-#             x = nn.Dense(self.dim, precision=self.precision)(x)
-#         # x = nn.Dense(self.dim, precision=self.precision)(x)
-#
-#         return x
+def train_step(x, state:EMATrainState):
+    def loss_fn(params):
+        out = state.apply_fn({'params': params}, x)
+        loss = (jnp.zeros_like(out) - out).mean()
+        return loss
 
+    grad = jax.grad(loss_fn)(state.params)
 
-DPDense = ViT
+    state=state.apply_gradients(grad)
+    return state
 
-"""
 
 def train():
     device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
@@ -44,12 +40,16 @@ def train():
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
 
+    x_sharding = mesh_sharding(PartitionSpec('data'))
+    rng = jax.random.PRNGKey(1)
+    state, state_sharding = create_train_state(rng, x_sharding, mesh)
+
     # shape = (128, 256, 384)
     shape = (128, 32, 32, 3)
     batch, *res = shape
 
     rng = jax.random.PRNGKey(1)
-    model = ViT()
+
     # x = jnp.ones(shape)
     x = jax.random.normal(rng, shape)
     x_sharding = mesh_sharding(PartitionSpec('data'))
@@ -67,31 +67,18 @@ def train():
         ]
     )
 
-    def train_step(x, params):
-        # out = model.apply({'params': params}, x)
-        # return out
-
-        def loss_fn(params):
-            out = model.apply({'params': params}, x)
-            loss = (jnp.zeros_like(out) - out).mean()
-            return loss
-
-        grad = jax.grad(loss_fn)(params)
-
-        return grad
-
-    train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=(state_sharding), )
+    train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
     with mesh:
 
-        grad = block_all(train_step_jit(global_batch_array, params))
+        grad = block_all(train_step_jit(global_batch_array, state))
 
         for i in range(100):
-            grad = block_all(train_step_jit(global_batch_array, params))
+            grad = block_all(train_step_jit(global_batch_array, state))
 
         start = time.time()
         for i in range(1000):
-            grad = block_all(train_step_jit(global_batch_array, params))
+            grad = block_all(train_step_jit(global_batch_array, state))
         end = time.time()
 
         if jax.process_index() == 0:
@@ -112,7 +99,7 @@ def train():
             # print(grad)
 
     return grad
-"""
+
 
 if __name__ == "__main__":
     jax.distributed.initialize()
@@ -121,17 +108,3 @@ if __name__ == "__main__":
         print(jax.devices())
 
     # out3 = train()
-
-    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
-    mesh = Mesh(device_mesh, axis_names=('data',))
-
-
-    def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
-        return NamedSharding(mesh, pspec)
-
-
-    x_sharding = mesh_sharding(PartitionSpec('data'))
-    rng = jax.random.PRNGKey(1)
-    state=create_train_state(rng,x_sharding,mesh)
-
-
