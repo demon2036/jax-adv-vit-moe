@@ -148,6 +148,3 @@ def create_train_state(rng,
     return
 
 
-if __name__=="__main__":
-    rng=jax.random.PRNGKey(1)
-    device_mesh=
