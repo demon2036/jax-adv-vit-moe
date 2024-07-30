@@ -9,6 +9,7 @@ import tqdm
 from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 
+from prefetch import prefetch_to_device
 from train_state import create_train_state, EMATrainState
 
 from training import apply_model_trade
@@ -98,8 +99,7 @@ def train_and_evaluate(args):
                                                                   test_shard_path=args.valid_dataset_shards,
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
-
-
+    train_dataloader_iter=prefetch_to_device(train_dataloader_iter,2,x_sharding)
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
@@ -139,7 +139,7 @@ def train_and_evaluate(args):
             for _ in pbar:
                 data = next(train_dataloader_iter)
 
-                data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+                # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
 
                 state, metrics = train_step_jit(state, data, rng)
 
