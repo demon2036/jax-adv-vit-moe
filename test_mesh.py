@@ -5,11 +5,13 @@ import flax.linen as nn
 import numpy as np
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from jax.experimental import mesh_utils
+from typing import Tuple
 
 Device = jax.Device
+TpuCoords=Tuple[int,int,int,int]
 
 
-def get_device_coords_tpu(device: Device):
+def get_device_coords_tpu(device: Device)->TpuCoords:
     assert device.platform == 'tpu'
     print(device)
     print(device.core_on_chip)
@@ -31,10 +33,9 @@ def get_hardware_mesh_tpu(devices):
     mesh = np.empty((nc, nx, ny, nz), dtype=object)
     print(mesh)
     print(mesh_dict)
-    # for (c,x,y,z) ,device in mesh_dict
-
-    # mesh_dict=
-    pass
+    for (c, x, y, z), device in mesh_dict:
+        mesh_dict[(c, x, y, z)] = device
+    return mesh
 
 
 def go():
@@ -44,8 +45,8 @@ def go():
     if jax.process_index() == 0:
         print(mesh)
 
-        get_hardware_mesh_tpu(jax.devices())
-
+        mesh=get_hardware_mesh_tpu(jax.devices())
+        print(mesh)
     pass
 
 
