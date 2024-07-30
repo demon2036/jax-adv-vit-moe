@@ -102,9 +102,7 @@ def train_and_evaluate(args):
     data = next(train_dataloader_iter)
 
     data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
-    return data
 
-    """
     
 
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh, dim=768)
@@ -124,9 +122,10 @@ def train_and_evaluate(args):
 
                 pbar.update()
                 break
+    """ return data
+
     """
 
-    return None
 
     return metrics
 
@@ -200,5 +199,8 @@ if __name__ == "__main__":
     # parser.add_argument("--ipaddr")
     # parser.add_argument("--hostname")
     parser.add_argument("--output-dir", default=".")
-    data = train_and_evaluate(parser.parse_args())
-    jax.tree_util.tree_map(lambda x:print(x.shape),data)
+
+    metrics=train_and_evaluate(parser.parse_args())
+
+    # data = train_and_evaluate(parser.parse_args())
+    # jax.tree_util.tree_map(lambda x: print(x.shape), data)
