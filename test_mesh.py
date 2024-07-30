@@ -40,21 +40,22 @@ def get_hardware_mesh_tpu(devices):
     return mesh
 
 
+def get_logical_mesh(partitions, hardware_mesh):
+    replicas = tuple(
+        s // p for p, s in zip(partitions, hardware_mesh.shape, strict=True)
+    )
+    replicas = tuple(reversed(replicas))
+    print(replicas)
 
-def get_logical_mesh(partitions,hardware_mesh):
-    for p,s in zip(partitions,hardware_mesh.shape,strict=True):
-        print(p,s)
 
-
-def get_auto_logical_mesh_tpu(num_partitions:int,hardware_mesh:np.ndarray):
+def get_auto_logical_mesh_tpu(num_partitions: int, hardware_mesh: np.ndarray):
     hardware_mesh_shape = hardware_mesh.shape
-    z=min(num_partitions,hardware_mesh_shape[3])
-    y = min(num_partitions//z, hardware_mesh_shape[2])
-    x = min(num_partitions//(z*y), hardware_mesh_shape[1])
-    c = min(num_partitions//(z*y*x), hardware_mesh_shape[0])
+    z = min(num_partitions, hardware_mesh_shape[3])
+    y = min(num_partitions // z, hardware_mesh_shape[2])
+    x = min(num_partitions // (z * y), hardware_mesh_shape[1])
+    c = min(num_partitions // (z * y * x), hardware_mesh_shape[0])
 
-    return get_logical_mesh((c,x,y,z),hardware_mesh)
-
+    return get_logical_mesh((c, x, y, z), hardware_mesh)
 
 
 def go():
@@ -66,7 +67,7 @@ def go():
 
         hardware_mesh = get_hardware_mesh_tpu(jax.devices())
 
-        get_auto_logical_mesh_tpu(4,hardware_mesh)
+        get_auto_logical_mesh_tpu(4, hardware_mesh)
         # print(hardware_mesh)
     pass
 
