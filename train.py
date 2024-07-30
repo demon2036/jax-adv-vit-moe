@@ -131,13 +131,13 @@ def train_and_evaluate(args):
     train_step_jit = jax.jit(apply_model_trade,
                              in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
-
+    data = next(train_dataloader_iter)
     with mesh:
         disable = not jax.process_index() == 0
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                data = next(train_dataloader_iter)
+
 
                 # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
 

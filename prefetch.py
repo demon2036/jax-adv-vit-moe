@@ -53,14 +53,14 @@ def prefetch_to_device(
     :param data_sharding:
   """
 
-
     if size and size > 0:
         # We fill items to this queue, and pop from it when a new item is yielded.
         queue = collections.deque()
 
         def enqueue(n):
             for data in itertools.islice(iterator, n):
-                data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=data_sharding), data)
+                data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=data_sharding),
+                                              data)
                 queue.append(data)
 
         enqueue(size)
