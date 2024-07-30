@@ -7,6 +7,8 @@ from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from jax.experimental import mesh_utils
 from typing import Tuple
 
+from utils.json_print import json_print
+
 Device = jax.Device
 TpuCoords=Tuple[int,int,int,int]
 
@@ -26,13 +28,13 @@ def get_device_coords_tpu(device: Device)->TpuCoords:
 
 def get_hardware_mesh_tpu(devices):
     mesh_dict = {get_device_coords_tpu(device): device for device in devices}
-    print(mesh_dict)
+    json_print(mesh_dict)
 
     nc, nx, ny, nz = map(lambda x: x + 1, sorted(mesh_dict.keys())[-1])
     print(nc, nx, ny, nz)
     mesh = np.empty((nc, nx, ny, nz), dtype=object)
     print(mesh)
-    print(mesh_dict)
+    json_print(mesh_dict)
     for (c, x, y, z), device in mesh_dict.items():
         mesh[(c, x, y, z)] = device
     return mesh
@@ -43,7 +45,7 @@ def go():
     mesh = Mesh(device_mesh, ("data",))
 
     if jax.process_index() == 0:
-        print(mesh)
+        json_print(mesh)
 
         mesh=get_hardware_mesh_tpu(jax.devices())
         print(mesh)
