@@ -15,12 +15,12 @@ TpuCoords = Tuple[int, int, int, int]
 
 def get_device_coords_tpu(device: Device) -> TpuCoords:
     assert device.platform == 'tpu'
-    print(device)
-    print(device.core_on_chip)
-    # print(device.default_memory())
-    # print(device.memory_stats())
-    print(device.coords)
-    print()
+    # print(device)
+    # print(device.core_on_chip)
+    # # print(device.default_memory())
+    # # print(device.memory_stats())
+    # print(device.coords)
+    # print()
     core_on_chip = int(device.core_on_chip)
     coords = tuple(map(int, device.coords))
     return core_on_chip, *coords
@@ -47,10 +47,11 @@ def get_logical_mesh(partitions,hardware_mesh):
 
 
 def get_auto_logical_mesh_tpu(num_partitions:int,hardware_mesh:np.ndarray):
-    z=min(num_partitions,hardware_mesh[3])
-    y = min(num_partitions//z, hardware_mesh[2])
-    x = min(num_partitions//(z*y), hardware_mesh[1])
-    c = min(num_partitions//(z*y*x), hardware_mesh[0])
+    hardware_mesh_shape = hardware_mesh.shape
+    z=min(num_partitions,hardware_mesh_shape[3])
+    y = min(num_partitions//z, hardware_mesh_shape[2])
+    x = min(num_partitions//(z*y), hardware_mesh_shape[1])
+    c = min(num_partitions//(z*y*x), hardware_mesh_shape[0])
 
     return get_logical_mesh((c,x,y,z),hardware_mesh)
 
