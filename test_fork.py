@@ -146,7 +146,7 @@ def case4():
     model = ViT()
     # x = jnp.ones(shape)
     x = jax.random.normal(rng, shape)
-    x_sharding = mesh_sharding(PartitionSpec('data'))
+    x_sharding = mesh_sharding(PartitionSpec('expert'))
     """
     # x = jax.device_put(x, x_sharding)
     global_batch_array = jax.device_put(x, x_sharding)
