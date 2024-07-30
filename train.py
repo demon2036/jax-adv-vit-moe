@@ -132,19 +132,20 @@ def train_and_evaluate(args):
                              in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
 
-    x = jnp.zeros((128, 3, 32, 32))
-    y = jnp.zeros((128,))
+    # x = jnp.zeros((128, 3, 32, 32))
+    # y = jnp.zeros((128,))
 
-    # data = next(train_dataloader_iter)
-    data = [x, y]
-    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
-                                  data)
+
+    # data = [x, y]
+    # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+    #                               data)
 
     with mesh:
         disable = not jax.process_index() == 0
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
+                data = next(train_dataloader_iter)
                 # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
                 rng, train_rng = jax.random.split(rng)
 
