@@ -9,6 +9,8 @@ from jax.sharding import Mesh, PartitionSpec, NamedSharding
 
 from train_state import create_train_state, EMATrainState
 
+from training import apply_model_trade
+
 
 def block_all(xs):
     jax.tree_util.tree_map(lambda x: x.block_until_ready(), xs)
@@ -44,22 +46,43 @@ def train():
 
     # x = jnp.ones(shape)
     x = jax.random.normal(rng, shape)
+    y = jnp.ones(shape[0])
     x_sharding = mesh_sharding(PartitionSpec('data'))
 
     global_batch_shape = (128 * jax.process_count(), *res)
     print(global_batch_shape)
 
-    per_replica_batches = np.split(x, jax.local_device_count())
+    per_replica_batches_x = np.split(x, jax.local_device_count())
+    per_replica_batches_y = np.split(y, jax.local_device_count())
 
-    global_batch_array = jax.make_array_from_single_device_arrays(
+    global_batch_array_x = jax.make_array_from_single_device_arrays(
         global_batch_shape, sharding=x_sharding,
         arrays=[
             jax.device_put(batch, device)
-            for batch, device in zip(per_replica_batches, x_sharding.addressable_devices)
+            for batch, device in zip(per_replica_batches_x, x_sharding.addressable_devices)
         ]
     )
 
-    train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
+    global_batch_array_y = jax.make_array_from_single_device_arrays(
+        global_batch_shape, sharding=x_sharding,
+        arrays=[
+            jax.device_put(batch, device)
+            for batch, device in zip(per_replica_batches_y, x_sharding.addressable_devices)
+        ]
+    )
+
+
+
+
+
+
+
+
+
+
+    # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
+
+    train_step_jit = jax.jit(apply_model_trade, in_shardings=( state_sharding,x_sharding,x_sharding), out_shardings=state_sharding, )
 
     with mesh:
         # grad = block_all(train_step_jit(global_batch_array, state))
@@ -76,7 +99,7 @@ def train():
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                state = block_all(train_step_jit(global_batch_array, state))
+                state = block_all(train_step_jit(state,(global_batch_array_x,global_batch_array_y),rng ))
 
                 pbar.update()
 
