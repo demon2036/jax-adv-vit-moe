@@ -45,11 +45,6 @@ def apply_model_trade(state, data, key):
 
     #TODO : reimplent metric
 
-    # metrics = jax.lax.pmean(metrics, axis_name="batch")
-
-    # grads = jax.lax.pmean(grads, axis_name="batch")
-    # state = state.replace(params=jax.tree_util.tree_map_with_path(f, state.params))
-
     state = state.apply_gradients(grads=grads)
 
     new_ema_params = jax.tree_util.tree_map(
@@ -58,7 +53,7 @@ def apply_model_trade(state, data, key):
     state = state.replace(ema_params=new_ema_params)
 
     # metrics = metrics | state.opt_state.hyperparams
-    metrics=dict()
+    metrics = dict()
     metrics['key'] = key
 
-    return state, key
+    return state, metrics
