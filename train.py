@@ -73,9 +73,10 @@ def train():
         # end = time.time()
 
         with tqdm.tqdm(range(1000), ) as pbar:
-            state = block_all(train_step_jit(global_batch_array, state))
+            for _ in pbar:
+                state = block_all(train_step_jit(global_batch_array, state))
 
-            pbar.update()
+                pbar.update()
 
         # if jax.process_index() == 0:
         #     print(device_mesh)
