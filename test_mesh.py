@@ -11,6 +11,7 @@ Device=jax.Device
 
 def get_device_coords_tpu(device:Device):
     assert device.platform=='tpu'
+    print(device)
     print(device.core_on_chip)
 
 
