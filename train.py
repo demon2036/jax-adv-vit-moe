@@ -62,6 +62,8 @@ def train_step(x, state: EMATrainState):
 
 
 def convert_to_global_array(x, x_sharding):
+    x = np.array(x)
+
     b, *res = x.shape
 
     per_replica_batches_x = np.split(x, jax.local_device_count())
@@ -80,11 +82,9 @@ def convert_to_global_array(x, x_sharding):
 
 
 def train_and_evaluate(args):
-
     rng = jax.random.key(0)
 
     rng, init_rng = jax.random.split(rng)
-
 
     device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
     mesh = Mesh(device_mesh, axis_names=('data',))
@@ -93,8 +93,6 @@ def train_and_evaluate(args):
         return NamedSharding(mesh, pspec)
 
     x_sharding = mesh_sharding(PartitionSpec('data'))
-
-
 
     train_dataloader_iter, test_dataloader = get_train_dataloader(args.train_batch_size,
                                                                   shard_path=args.train_dataset_shards,
@@ -105,10 +103,6 @@ def train_and_evaluate(args):
 
     data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
     return data
-
-
-
-
 
     """
     
@@ -206,5 +200,5 @@ if __name__ == "__main__":
     # parser.add_argument("--ipaddr")
     # parser.add_argument("--hostname")
     parser.add_argument("--output-dir", default=".")
-    data=train_and_evaluate(parser.parse_args())
+    data = train_and_evaluate(parser.parse_args())
     print(data.shape)
