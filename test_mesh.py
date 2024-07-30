@@ -12,8 +12,8 @@ def get_device_coords_tpu(device: Device):
     assert device.platform == 'tpu'
     print(device)
     print(device.core_on_chip)
-    print(device.default_memory())
-    print(device.memory_stats())
+    # print(device.default_memory())
+    # print(device.memory_stats())
     print(device.coords)
     print()
     core_on_chip = int(device.core_on_chip)
