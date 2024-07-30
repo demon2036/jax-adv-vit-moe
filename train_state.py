@@ -113,36 +113,34 @@ def create_train_state(rng,
             tx = optax.chain(optax.clip_by_global_norm(clip_grad), tx)
         return tx
 
-    def init_fn(x, model, learning_rate, warmup_steps, training_steps):
+    learning_rate = optax.warmup_cosine_decay_schedule(
+        init_value=1e-6,
+        peak_value=learning_rate,
+        warmup_steps=warmup_steps,
+        decay_steps=training_steps,
+        end_value=1e-5,
+    )
+
+    tx = create_optimizer_fn(learning_rate)
+
+    def init_fn(x, model, optimizer):
         variables = model.init(rng, x)
         params = variables['params']
 
-        learning_rate = optax.warmup_cosine_decay_schedule(
-            init_value=1e-6,
-            peak_value=learning_rate,
-            warmup_steps=warmup_steps,
-            decay_steps=training_steps,
-            end_value=1e-5,
-        )
-
-        tx = create_optimizer_fn(learning_rate)
-        return EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
+        return EMATrainState.create(apply_fn=model.apply, params=params, tx=optimizer, ema_params=params,
+                                    ema_decay=ema_decay,
                                     trade_beta=trade_beta, label_smoothing=label_smoothing)
 
     abstract_variables = jax.eval_shape(
-        functools.partial(init_fn,
-                          model=model,
-                          learning_rate=learning_rate,
-                          warmup_steps=warmup_steps,
-                          training_steps=training_steps), input_data)
+        functools.partial(init_fn, model=model, ), input_data)
 
     state_sharding = nn.get_sharding(abstract_variables, mesh)
 
-    jit_init_fn = jax.jit(init_fn, static_argnums=(1, 2, 3, 4),
+    jit_init_fn = jax.jit(init_fn, static_argnums=(1, 2),
                           in_shardings=x_sharding,  # PRNG key and x
                           out_shardings=state_sharding)
 
-    state = jit_init_fn(input_data, model, learning_rate, warmup_steps, training_steps)
+    state = jit_init_fn(input_data, model, tx)
     print(2)
 
     print(state)
