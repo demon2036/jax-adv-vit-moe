@@ -201,4 +201,4 @@ if __name__ == "__main__":
     # parser.add_argument("--hostname")
     parser.add_argument("--output-dir", default=".")
     data = train_and_evaluate(parser.parse_args())
-    print(data.shape)
+    jax.tree_util.tree_map(lambda x:print(x.shape),data)
