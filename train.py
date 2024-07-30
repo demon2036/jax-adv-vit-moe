@@ -158,7 +158,8 @@ def train_and_evaluate(args):
 
             average_meter.update(**metrics)
             metrics = average_meter.summary('train/')
-            wandb.log(metrics, step)
+            if jax.process_index() == 0:
+                wandb.log(metrics, step)
 
 
             # if jax.process_index() == 0 and step % args.log_interval == 0:
