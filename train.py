@@ -83,7 +83,7 @@ def train():
 
     # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
-    train_step_jit = jax.jit(apply_model_trade, in_shardings=( state_sharding,(x_sharding,x_sharding),mesh_sharding()), out_shardings=state_sharding, )
+    train_step_jit = jax.jit(apply_model_trade, in_shardings=( state_sharding,(x_sharding,x_sharding),mesh_sharding(())), out_shardings=state_sharding, )
 
     with mesh:
         # grad = block_all(train_step_jit(global_batch_array, state))
