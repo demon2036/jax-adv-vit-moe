@@ -95,7 +95,7 @@ def train():
 
             # print(grad)
 
-    return grad
+    return state
 
 
 if __name__ == "__main__":
@@ -104,4 +104,4 @@ if __name__ == "__main__":
     # if jax.process_index() == 0:
     #     print(jax.devices())
 
-    out3 = train()
+    state = train()
