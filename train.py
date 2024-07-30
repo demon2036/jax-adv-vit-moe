@@ -93,7 +93,7 @@ def train():
 
     train_step_jit = jax.jit(apply_model_trade,
                              in_shardings=(state_sharding, (x_sharding, x_sharding), mesh_sharding(())),
-                             out_shardings=(state_sharding, None),donate_argnums=0 )
+                             out_shardings=(state_sharding, None), donate_argnums=0)
 
     with mesh:
         # grad = block_all(train_step_jit(global_batch_array, state))
@@ -126,4 +126,5 @@ if __name__ == "__main__":
     #     print(jax.devices())
 
     metrics = train()
-    print(metrics)
+    if jax.process_index() == 0:
+        print(metrics)
