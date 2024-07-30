@@ -45,7 +45,7 @@ def go():
     mesh = Mesh(device_mesh, ("data",))
 
     if jax.process_index() == 0:
-        json_print(mesh)
+        print(mesh)
 
         mesh=get_hardware_mesh_tpu(jax.devices())
         print(mesh)
