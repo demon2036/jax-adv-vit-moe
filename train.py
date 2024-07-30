@@ -99,7 +99,7 @@ def train_and_evaluate(args):
                                                                   test_shard_path=args.valid_dataset_shards,
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
-    train_dataloader_iter=prefetch_to_device(train_dataloader_iter,2,x_sharding)
+    train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding)
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
@@ -131,17 +131,24 @@ def train_and_evaluate(args):
     train_step_jit = jax.jit(apply_model_trade,
                              in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
-    data = next(train_dataloader_iter)
+
+    x = jnp.zeros((128, 3, 32, 32))
+    y = jnp.zeros((128,))
+
+    # data = next(train_dataloader_iter)
+    data=[x,y]
+    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+                                  data)
+
     with mesh:
         disable = not jax.process_index() == 0
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-
-
                 # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+                rng, train_rng = jax.random.split(rng)
 
-                state, metrics = train_step_jit(state, data, rng)
+                state, metrics = train_step_jit(state, data, train_rng)
 
                 pbar.update()
 
@@ -224,8 +231,7 @@ if __name__ == "__main__":
 
     metrics = train_and_evaluate(parser.parse_args())
 
-    if jax.process_index()==0:
-
+    if jax.process_index() == 0:
         print(metrics)
 
     # data = train_and_evaluate(parser.parse_args())
