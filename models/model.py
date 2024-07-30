@@ -24,7 +24,6 @@ import jax.experimental.pallas.ops.tpu.flash_attention
 import jax.numpy as jnp
 from chex import Array
 
-from datasets import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from utils2 import fixed_sincos2d_embeddings
 
 DenseGeneral = partial(nn.DenseGeneral, kernel_init=init.truncated_normal(0.02))
