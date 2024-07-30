@@ -118,6 +118,7 @@ def train():
 
 
 if __name__ == "__main__":
+    jax.config.update('jax_threefry_partitionable', True)
     jax.distributed.initialize()
 
     # if jax.process_index() == 0:
