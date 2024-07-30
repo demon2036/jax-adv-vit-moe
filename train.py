@@ -1,18 +1,11 @@
-import functools
 import time
 
 import jax
-import flax
 import jax.numpy as jnp
 import numpy as np
-from flax.jax_utils import replicate, unreplicate
-from flax.linen.linear import default_kernel_init
-from flax.training.common_utils import shard
 from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
-import flax.linen as nn
-from models.model import ViT
-from test_mesh import get_auto_logical_mesh_tpu, get_hardware_mesh_tpu
+
 from train_state import create_train_state, EMATrainState
 
 
@@ -21,7 +14,7 @@ def block_all(xs):
     return xs
 
 
-def train_step(x, state:EMATrainState):
+def train_step(x, state: EMATrainState):
     def loss_fn(params):
         out = state.apply_fn({'params': params}, x)
         loss = (jnp.zeros_like(out) - out).mean()
@@ -29,7 +22,7 @@ def train_step(x, state:EMATrainState):
 
     grad = jax.grad(loss_fn)(state.params)
 
-    state=state.apply_gradients(grad)
+    state = state.apply_gradients(grad)
     return state
 
 
@@ -47,8 +40,6 @@ def train():
     # shape = (128, 256, 384)
     shape = (128, 32, 32, 3)
     batch, *res = shape
-
-    rng = jax.random.PRNGKey(1)
 
     # x = jnp.ones(shape)
     x = jax.random.normal(rng, shape)
@@ -107,4 +98,4 @@ if __name__ == "__main__":
     if jax.process_index() == 0:
         print(jax.devices())
 
-    # out3 = train()
+    out3 = train()
