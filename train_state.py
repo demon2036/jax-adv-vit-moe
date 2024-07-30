@@ -115,17 +115,19 @@ def create_train_state(rng,
             tx = optax.chain(optax.clip_by_global_norm(clip_grad), tx)
         return tx
 
-    learning_rate = optax.warmup_cosine_decay_schedule(
-        init_value=1e-6,
-        peak_value=learning_rate,
-        warmup_steps=warmup_steps,
-        decay_steps=training_steps,
-        end_value=1e-5,
-    )
 
-    def init_fn(x, model):
+
+    def init_fn(x, model,learning_rate,warmup_steps,training_steps):
         variables = model.init(rng, x)
         params = variables['params']
+
+        learning_rate = optax.warmup_cosine_decay_schedule(
+            init_value=1e-6,
+            peak_value=learning_rate,
+            warmup_steps=warmup_steps,
+            decay_steps=training_steps,
+            end_value=1e-5,
+        )
 
         tx = create_optimizer_fn(learning_rate)
         return EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
@@ -136,11 +138,11 @@ def create_train_state(rng,
 
     state_sharding = nn.get_sharding(abstract_variables, mesh)
 
-    jit_init_fn = jax.jit(init_fn, static_argnums=(1,),
+    jit_init_fn = jax.jit(init_fn, static_argnums=(1,2,3,4),
                           in_shardings=x_sharding,  # PRNG key and x
                           out_shardings=state_sharding)
 
-    state = jit_init_fn(input_data, model)
+    state = jit_init_fn(input_data, model,learning_rate,warmup_steps,training_steps)
     print(2)
 
     print(state)
