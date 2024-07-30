@@ -18,6 +18,7 @@ from dataset import get_train_dataloader
 from utils.utils2 import AverageMeter
 from jax.experimental import multihost_utils
 
+
 def block_all(xs):
     jax.tree_util.tree_map(lambda x: x.block_until_ready(), xs)
     return xs
@@ -155,20 +156,13 @@ def train_and_evaluate(args):
             rng, train_rng = jax.random.split(rng)
 
             state, metrics = train_step_jit(state, data, train_rng)
-
-
-
-
-
-
+            metrics = multihost_utils.process_allgather(metrics)
             if jax.process_index() == 0:
 
-                metrics=multihost_utils.process_allgather(metrics)
                 average_meter.update(**metrics)
                 metrics = average_meter.summary('train/')
 
                 wandb.log(metrics, step)
-
 
             # if jax.process_index() == 0 and step % args.log_interval == 0:
             #     average_meter.update(**metrics)
