@@ -58,7 +58,6 @@ def create_train_state(rng,
                        b1=0.95,
                        b2=0.98,
 
-
                        ):
     """Creates initial `TrainState`."""
 
@@ -91,7 +90,6 @@ def create_train_state(rng,
     # TODO: implement pjit train state init
     print(3)
 
-
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
             learning_rate: optax.Schedule,
@@ -115,9 +113,7 @@ def create_train_state(rng,
             tx = optax.chain(optax.clip_by_global_norm(clip_grad), tx)
         return tx
 
-
-
-    def init_fn(x, model,learning_rate,warmup_steps,training_steps):
+    def init_fn(x, model, learning_rate, warmup_steps, training_steps):
         variables = model.init(rng, x)
         params = variables['params']
 
@@ -131,18 +127,18 @@ def create_train_state(rng,
 
         tx = create_optimizer_fn(learning_rate)
         return EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
-                             trade_beta=trade_beta, label_smoothing=label_smoothing)
+                                    trade_beta=trade_beta, label_smoothing=label_smoothing)
 
     abstract_variables = jax.eval_shape(
         functools.partial(init_fn, model=model, ), input_data)
 
     state_sharding = nn.get_sharding(abstract_variables, mesh)
 
-    jit_init_fn = jax.jit(init_fn, static_argnums=(1,2,3,4),
+    jit_init_fn = jax.jit(init_fn, static_argnums=(1, 2, 3, 4),
                           in_shardings=x_sharding,  # PRNG key and x
                           out_shardings=state_sharding)
 
-    state = jit_init_fn(input_data, model,learning_rate,warmup_steps,training_steps)
+    state = jit_init_fn(input_data, model, learning_rate, warmup_steps, training_steps)
     print(2)
 
     print(state)
@@ -152,5 +148,3 @@ def create_train_state(rng,
         pass
 
     return
-
-
