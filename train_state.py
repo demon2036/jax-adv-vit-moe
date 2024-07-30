@@ -89,6 +89,7 @@ def create_train_state(rng,
     # image_shape = [1, 28, 28, 1]
 
     # TODO: implement pjit train state init
+    print(3)
 
 
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
@@ -127,7 +128,7 @@ def create_train_state(rng,
         params = variables['params']
 
         tx = create_optimizer_fn(learning_rate)
-        EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
+        return EMATrainState.create(apply_fn=model.apply, params=params, tx=tx, ema_params=params, ema_decay=ema_decay,
                              trade_beta=trade_beta, label_smoothing=label_smoothing)
 
     abstract_variables = jax.eval_shape(
