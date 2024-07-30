@@ -46,11 +46,11 @@ def get_logical_mesh_default(partitions: Tuple[int, ...], replicas: Tuple[int, .
     shape = functools.reduce(lambda a, b: a + b, zip(partitions, replicas))
     print(shape, partitions, replicas)
     devices = hardware_mesh.reshape(shape)
-    print(devices)
+    print(devices.shape)
     devices = devices.transpose(tuple(range(0, 2 * hardware_mesh.ndim, 2))
                                 + tuple(range(1, 2 * hardware_mesh.ndim, 2))
                                 )
-    print(devices)
+    print(devices.shape)
 
 
 def get_logical_mesh(partitions, hardware_mesh: np.ndarray):
