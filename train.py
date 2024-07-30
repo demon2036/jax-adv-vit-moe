@@ -78,50 +78,14 @@ def train():
 
     # shape = (128, 256, 384)
     shape = (128, 3, 32, 32,)
-    batch, *res = shape
 
     # x = jnp.ones(shape)
     x = jax.random.normal(rng, shape)
     y = jnp.ones(shape[0])
-    """
-
-    global_batch_shape_x = (128 * jax.process_count(), *res)
-    global_batch_shape_y = (128 * jax.process_count(),)
-    print(global_batch_shape_x, global_batch_shape_y)
-
-    per_replica_batches_x = np.split(x, jax.local_device_count())
-    per_replica_batches_y = np.split(y, jax.local_device_count())
-
-    global_batch_array_x = jax.make_array_from_single_device_arrays(
-        global_batch_shape_x, sharding=x_sharding,
-        arrays=[
-            jax.device_put(batch, device)
-            for batch, device in zip(per_replica_batches_x, x_sharding.addressable_devices)
-        ]
-    )
-
-    global_batch_array_y = jax.make_array_from_single_device_arrays(
-        global_batch_shape_y, sharding=x_sharding,
-        arrays=[
-            jax.device_put(batch, device)
-            for batch, device in zip(per_replica_batches_y, x_sharding.addressable_devices)
-        ]
-    )
-    """
-    # global_batch_array_x = convert_to_global_array(x, x_sharding)
-    # global_batch_array_y = convert_to_global_array(y, x_sharding)
-    # print(global_batch_array_x.shape,global_batch_array_y.shape)
-    # return global_batch_array_x
 
 
-    data=(x,y)
-    data=jax.tree_util.tree_map(functools.partial(convert_to_global_array,x_sharding=x_sharding),data)
-
-    for d in data:
-        print(d.shape)
-    return data
-    while True:
-        pass
+    data = (x, y)
+    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
 
     state, state_sharding = create_train_state(rng, x_sharding, mesh, dim=768)
 
@@ -146,7 +110,7 @@ def train():
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                state = block_all(train_step_jit(state, (global_batch_array_x, global_batch_array_y), rng))
+                state = block_all(train_step_jit(state, data, rng))
 
                 pbar.update()
 
@@ -154,7 +118,7 @@ def train():
 
 
 if __name__ == "__main__":
-    jax.config.update('jax_threefry_partitionable', True)
+    # jax.config.update('jax_threefry_partitionable', True)
     jax.distributed.initialize()
 
     # if jax.process_index() == 0:
