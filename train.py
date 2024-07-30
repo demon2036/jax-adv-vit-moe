@@ -83,9 +83,9 @@ def train():
     x = jax.random.normal(rng, shape)
     y = jnp.ones(shape[0])
 
-
     data = (x, y)
     data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+    print(type(data))
 
     state, state_sharding = create_train_state(rng, x_sharding, mesh, dim=768)
 
@@ -93,7 +93,7 @@ def train():
 
     train_step_jit = jax.jit(apply_model_trade,
                              in_shardings=(state_sharding, (x_sharding, x_sharding), mesh_sharding(())),
-                             out_shardings=(state_sharding,x_sharding), )
+                             out_shardings=(state_sharding, None), )
 
     with mesh:
         # grad = block_all(train_step_jit(global_batch_array, state))
@@ -110,7 +110,7 @@ def train():
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                state,metrics = block_all(train_step_jit(state, data, rng))
+                state, metrics = block_all(train_step_jit(state, data, rng))
 
                 pbar.update()
                 break
