@@ -103,7 +103,7 @@ def train_and_evaluate(args):
 
     data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
 
-    
+    print(type(data))
 
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh, dim=768)
 
