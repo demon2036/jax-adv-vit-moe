@@ -33,7 +33,7 @@ def get_hardware_mesh_tpu(devices):
     mesh = np.empty((nc, nx, ny, nz), dtype=object)
     print(mesh)
     print(mesh_dict)
-    for (c, x, y, z), device in mesh_dict:
+    for (c, x, y, z), device in mesh_dict.items():
         mesh[(c, x, y, z)] = device
     return mesh
 
