@@ -54,7 +54,7 @@ def get_logical_mesh_default(partitions: Tuple[int, ...], replicas: Tuple[int, .
     num_partitions=np.prod(partitions)
     num_replicas=np.prod(replicas)
     devices=devices.reshape((num_partitions,num_replicas))
-    print(devices)
+    print(f'{devices=}')
 
 
 def get_logical_mesh(partitions, hardware_mesh: np.ndarray):
