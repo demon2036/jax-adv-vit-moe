@@ -140,6 +140,8 @@ def create_train_state(rng,
                           out_shardings=state_sharding)
 
     state = jit_init_fn(input_data, model)
+    print(2)
+
     print(state)
     print(1)
 
