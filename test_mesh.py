@@ -1,3 +1,5 @@
+import functools
+
 import jax
 import jax.numpy as jnp
 import flax
@@ -40,17 +42,22 @@ def get_hardware_mesh_tpu(devices):
     return mesh
 
 
-def get_logical_mesh(partitions, hardware_mesh):
+def get_logical_mesh_default(partitions:Tuple[int,...],replicas:Tuple[int,...],hardware_mesh:np.ndarray):
+    shape=functools.reduce(lambda a,b:a+b,zip(partitions,replicas))
+    print(shape,partitions,replicas)
+
+
+def get_logical_mesh(partitions, hardware_mesh:np.ndarray):
     replicas = tuple(
         s // p for p, s in zip(partitions, hardware_mesh.shape, strict=True)
     )
     replicas = tuple(reversed(replicas))
     partitions = tuple(reversed(partitions))
-    print(replicas)
-    print(partitions)
-    hardware_axes_order=tuple(reversed(range(hardware_mesh.ndim)))
-    hardware_mesh=hardware_mesh.transpose(hardware_axes_order)
+
+    hardware_axes_order = tuple(reversed(range(hardware_mesh.ndim)))
+    hardware_mesh = hardware_mesh.transpose(hardware_axes_order)
     print(hardware_mesh)
+    logical_mesh=get_logical_mesh_default(partitions,replicas,hardware_mesh)
 
 
 
