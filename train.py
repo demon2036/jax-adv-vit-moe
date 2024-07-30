@@ -103,7 +103,7 @@ def train_and_evaluate(args):
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
-                                               heads=args.heads,
+                                               heads=3,
                                                labels=args.labels,
                                                layerscale=args.layerscale,
                                                patch_size=args.patch_size,
@@ -136,7 +136,7 @@ def train_and_evaluate(args):
     y = jnp.zeros((128,))
 
     # data = next(train_dataloader_iter)
-    data=[x,y]
+    data = [x, y]
     data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
                                   data)
 
