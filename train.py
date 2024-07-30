@@ -62,9 +62,8 @@ def train_step(x, state: EMATrainState):
 
 
 def convert_to_global_array(x, x_sharding):
-    x = np.array(x)
-
     b, *res = x.shape
+    x = np.array(x)
 
     per_replica_batches_x = np.split(x, jax.local_device_count())
 
@@ -110,7 +109,7 @@ def train_and_evaluate(args):
     # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
     train_step_jit = jax.jit(apply_model_trade,
-                             in_shardings=(state_sharding, (x_sharding, x_sharding), mesh_sharding(())),
+                             in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
 
     with mesh:
@@ -125,7 +124,6 @@ def train_and_evaluate(args):
     """ return data
 
     """
-
 
     return metrics
 
@@ -200,7 +198,7 @@ if __name__ == "__main__":
     # parser.add_argument("--hostname")
     parser.add_argument("--output-dir", default=".")
 
-    metrics=train_and_evaluate(parser.parse_args())
+    metrics = train_and_evaluate(parser.parse_args())
 
     # data = train_and_evaluate(parser.parse_args())
     # jax.tree_util.tree_map(lambda x: print(x.shape), data)
