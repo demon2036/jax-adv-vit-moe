@@ -36,7 +36,7 @@ def train():
 
     x_sharding = mesh_sharding(PartitionSpec('data'))
     rng = jax.random.PRNGKey(1)
-    state, state_sharding = create_train_state(rng, x_sharding, mesh)
+    state, state_sharding = create_train_state(rng, x_sharding, mesh,dim=768)
 
     # shape = (128, 256, 384)
     shape = (128, 32, 32, 3)
@@ -72,7 +72,9 @@ def train():
         #     grad = block_all(train_step_jit(global_batch_array, state))
         # end = time.time()
 
-        with tqdm.tqdm(range(1000), ) as pbar:
+        disable = not jax.process_index() == 0
+
+        with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
                 state = block_all(train_step_jit(global_batch_array, state))
 
@@ -93,7 +95,7 @@ def train():
         #     print(global_batch_array.shape)
         #     print(end - start)
 
-            # print(grad)
+        # print(grad)
 
     return state
 
