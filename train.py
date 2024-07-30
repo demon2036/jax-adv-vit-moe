@@ -82,7 +82,6 @@ def train():
     # x = jnp.ones(shape)
     x = jax.random.normal(rng, shape)
     y = jnp.ones(shape[0])
-    x_sharding = mesh_sharding(PartitionSpec('data'))
     """
 
     global_batch_shape_x = (128 * jax.process_count(), *res)
@@ -109,7 +108,8 @@ def train():
     )
     """
     global_batch_array_x = convert_to_global_array(x, x_sharding)
-    print(global_batch_array_x.shape)
+    global_batch_array_y = convert_to_global_array(y, x_sharding)
+    print(global_batch_array_x.shape,global_batch_array_y.shape)
     return global_batch_array_x
 
     while True:
