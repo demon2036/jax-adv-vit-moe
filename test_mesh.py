@@ -22,9 +22,7 @@ def get_device_coords_tpu(device: Device):
 
 
 def get_hardware_mesh_tpu(devices):
-
-
-    mesh_dict={get_device_coords_tpu(device):device  for device in devices }
+    mesh_dict = {get_device_coords_tpu(device): device for device in devices}
     print(mesh_dict)
 
     # mesh_dict=
@@ -38,7 +36,7 @@ def go():
     if jax.process_index() == 0:
         print(mesh)
 
-        get_device_coords_tpu(jax.devices()[0])
+        get_hardware_mesh_tpu(jax.devices())
 
     pass
 
