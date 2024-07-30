@@ -42,12 +42,18 @@ def get_hardware_mesh_tpu(devices):
     return mesh
 
 
-def get_logical_mesh_default(partitions:Tuple[int,...],replicas:Tuple[int,...],hardware_mesh:np.ndarray):
-    shape=functools.reduce(lambda a,b:a+b,zip(partitions,replicas))
-    print(shape,partitions,replicas)
+def get_logical_mesh_default(partitions: Tuple[int, ...], replicas: Tuple[int, ...], hardware_mesh: np.ndarray):
+    shape = functools.reduce(lambda a, b: a + b, zip(partitions, replicas))
+    print(shape, partitions, replicas)
+    devices = hardware_mesh.reshape(shape)
+    print(devices)
+    devices = devices.transpose(tuple(range(0, 2 * hardware_mesh.ndim, 2))
+                                + tuple(range(1, 2 * hardware_mesh, 2))
+                                )
+    print(devices)
 
 
-def get_logical_mesh(partitions, hardware_mesh:np.ndarray):
+def get_logical_mesh(partitions, hardware_mesh: np.ndarray):
     replicas = tuple(
         s // p for p, s in zip(partitions, hardware_mesh.shape, strict=True)
     )
@@ -57,8 +63,7 @@ def get_logical_mesh(partitions, hardware_mesh:np.ndarray):
     hardware_axes_order = tuple(reversed(range(hardware_mesh.ndim)))
     hardware_mesh = hardware_mesh.transpose(hardware_axes_order)
     print(hardware_mesh)
-    logical_mesh=get_logical_mesh_default(partitions,replicas,hardware_mesh)
-
+    logical_mesh = get_logical_mesh_default(partitions, replicas, hardware_mesh)
 
 
 def get_auto_logical_mesh_tpu(num_partitions: int, hardware_mesh: np.ndarray):
