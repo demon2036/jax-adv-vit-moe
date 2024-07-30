@@ -45,7 +45,13 @@ def get_logical_mesh(partitions, hardware_mesh):
         s // p for p, s in zip(partitions, hardware_mesh.shape, strict=True)
     )
     replicas = tuple(reversed(replicas))
+    partitions = tuple(reversed(partitions))
     print(replicas)
+    print(partitions)
+    hardware_axes_order=tuple(reversed(range(hardware_mesh.ndim)))
+    hardware_mesh=hardware_mesh.transpose(hardware_axes_order)
+    print(hardware_mesh)
+
 
 
 def get_auto_logical_mesh_tpu(num_partitions: int, hardware_mesh: np.ndarray):
