@@ -38,10 +38,10 @@ def train():
 
     x_sharding = mesh_sharding(PartitionSpec('data'))
     rng = jax.random.PRNGKey(1)
-    state, state_sharding = create_train_state(rng, x_sharding, mesh,dim=768)
+    state, state_sharding = create_train_state(rng, x_sharding, mesh, dim=768)
 
     # shape = (128, 256, 384)
-    shape = (128, 32, 32, 3)
+    shape = (128, 3, 32, 32,)
     batch, *res = shape
 
     # x = jnp.ones(shape)
@@ -50,8 +50,8 @@ def train():
     x_sharding = mesh_sharding(PartitionSpec('data'))
 
     global_batch_shape_x = (128 * jax.process_count(), *res)
-    global_batch_shape_y = (128 * jax.process_count(), )
-    print(global_batch_shape_x,global_batch_shape_y)
+    global_batch_shape_y = (128 * jax.process_count(),)
+    print(global_batch_shape_x, global_batch_shape_y)
 
     per_replica_batches_x = np.split(x, jax.local_device_count())
     per_replica_batches_y = np.split(y, jax.local_device_count())
@@ -72,18 +72,11 @@ def train():
         ]
     )
 
-
-
-
-
-
-
-
-
-
     # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
-    train_step_jit = jax.jit(apply_model_trade, in_shardings=( state_sharding,(x_sharding,x_sharding),mesh_sharding(())), out_shardings=state_sharding, )
+    train_step_jit = jax.jit(apply_model_trade,
+                             in_shardings=(state_sharding, (x_sharding, x_sharding), mesh_sharding(())),
+                             out_shardings=state_sharding, )
 
     with mesh:
         # grad = block_all(train_step_jit(global_batch_array, state))
@@ -100,7 +93,7 @@ def train():
 
         with tqdm.tqdm(range(1000), disable=disable) as pbar:
             for _ in pbar:
-                state = block_all(train_step_jit(state,(global_batch_array_x,global_batch_array_y),rng ))
+                state = block_all(train_step_jit(state, (global_batch_array_x, global_batch_array_y), rng))
 
                 pbar.update()
 
