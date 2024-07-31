@@ -391,7 +391,7 @@ class ViTLayer(ViTBase, nn.Module):
                             (self.num_experts, 4 * dim, dim))
 
             norm = nn.LayerNorm()
-            mha = Attention()
+            mha = Attention(**self.kwargs)
 
             x = x + mha(norm(x))
             # x = x + (norm(x))
