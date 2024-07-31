@@ -102,6 +102,7 @@ def _receive(data: Array, num_groups: int,
     """Receives data from experts using all_to_all."""
     # partition_spec = ('data',)
     partition_spec = PartitionSpec('experts', 'replicate')
+    partition_spec = PartitionSpec('experts', 'replicate')
     partition_spec = _convert_partition_spec(partition_spec)
     # partition_spec = mesh_sharding(partition_spec)
 
@@ -558,10 +559,10 @@ class ViTLayer(ViTBase, nn.Module):
                 x = nn.gelu(x)
                 x = nn.Dense(dim)(x)
             else:
-                w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('data',)),
+                w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('experts',)),
                                (self.num_experts, dim, 4 * dim))
 
-                w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('data',)),
+                w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('experts',)),
                                 (self.num_experts, 4 * dim, dim))
 
                 x = _dispatch(x, None)
