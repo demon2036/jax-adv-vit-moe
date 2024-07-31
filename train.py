@@ -199,23 +199,30 @@ def train_and_evaluate(args):
     replicate = device_count // experts
     assert replicate * experts == device_count
 
-    device_mesh = mesh_utils.create_device_mesh((experts, replicate))
+    mesh_shape = (experts, replicate)
+
+    device_mesh = mesh_utils.create_device_mesh(mesh_shape)
     mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
 
-    sharding = NamedSharding(mesh, PartitionSpec('experts', 'replicate'))
 
-    # device_mesh_data = mesh_utils.create_device_mesh((device_count,))
-    # mesh_data = Mesh(device_mesh_data, axis_names=('data',))
+
+
+
+
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
 
-    print(sharding.mesh.shape)
+    x_sharding = mesh_sharding(PartitionSpec('experts', 'replicate'))
+
+
+    print(mesh.local_devices)
+    print(x_sharding.addressable_devices)
 
     while True:
         pass
 
-    x_sharding = mesh_sharding(PartitionSpec('experts', ))
+
 
     train_dataloader_iter, test_dataloader = get_train_dataloader(args.train_batch_size,
                                                                   shard_path=args.train_dataset_shards,
