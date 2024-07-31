@@ -151,18 +151,18 @@ def train_and_evaluate(args):
 
         for step in tqdm.tqdm(range(init_step, args.training_steps), initial=init_step, total=args.training_steps):
 
-            data = next(train_dataloader_iter)
-            # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
-            rng, train_rng = jax.random.split(rng)
-
-            state, metrics = train_step_jit(state, data, train_rng)
-
-            if step % args.log_interval == 0:
-                metrics = multihost_utils.process_allgather(metrics)
-                if jax.process_index() == 0:
-                    average_meter.update(**metrics)
-                    metrics = average_meter.summary('train/')
-                    wandb.log(metrics, step)
+            # data = next(train_dataloader_iter)
+            # # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+            # rng, train_rng = jax.random.split(rng)
+            #
+            # state, metrics = train_step_jit(state, data, train_rng)
+            #
+            # if step % args.log_interval == 0:
+            #     metrics = multihost_utils.process_allgather(metrics)
+            #     if jax.process_index() == 0:
+            #         average_meter.update(**metrics)
+            #         metrics = average_meter.summary('train/')
+            #         wandb.log(metrics, step)
 
             if step % args.eval_interval == 0:
                 for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
