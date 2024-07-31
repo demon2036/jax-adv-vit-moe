@@ -90,6 +90,12 @@ def create_train_state(rng,
     #                               input_data)
 
 
+    #lambda kp, *_: kp[-1].key == "kernel"
+    def f(p,x):
+        if jax.process_index()==0:
+            print(p)
+
+
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
             learning_rate: optax.Schedule,
@@ -99,7 +105,7 @@ def create_train_state(rng,
             b1=b1, b2=b2,
             # eps=args.adam_eps,
             weight_decay=weight_decay,
-            mask=partial(jax.tree_util.tree_map_with_path, lambda kp, *_: kp[-1].key == "kernel"),
+            mask=partial(jax.tree_util.tree_map_with_path,f ),
         )
         # if args.lr_decay < 1.0:
         #     layerwise_scales = {
