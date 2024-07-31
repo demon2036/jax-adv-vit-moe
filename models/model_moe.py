@@ -262,7 +262,7 @@ class SoftRouter(ViTBase, nn.Module):
         w1 = self.param('kernel1', nn.with_partitioning(self.expert_init, ('experts',)),
                         (self.num_experts, dim, self.hidden_dim))
 
-        w2 = self.param('kernel1', nn.with_partitioning(self.expert_init, ('experts',)),
+        w2 = self.param('kernel2', nn.with_partitioning(self.expert_init, ('experts',)),
                         (self.num_experts, self.hidden_dim, self.dim))
 
         # print(inputs.shape,dispatch_weights.shape)
