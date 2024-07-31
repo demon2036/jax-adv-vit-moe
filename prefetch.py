@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 
 
-def convert_to_global_array(x, x_sharding,mesh_shape):
+def convert_to_global_array(x, x_sharding,mesh_shape=None):
     b, *res = x.shape
     x = np.array(x)
 
