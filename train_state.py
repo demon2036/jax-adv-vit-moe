@@ -91,8 +91,17 @@ def create_train_state(rng,
 
     #lambda kp, *_: kp[-1].key == "kernel"
     def f(p, x):
-        if jax.process_index() == 0:
-            print(p,type(p[-1]),type(p[-2]))
+
+
+        idx=-1
+
+        while isinstance(p[idx],jax.tree_util.DictKey)==False:
+            idx-=1
+
+
+
+            if jax.process_index() == 0:
+                print(p,type(p[-1]),type(p[-2]))
 
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
