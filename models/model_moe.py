@@ -218,7 +218,11 @@ class SoftRouter(nn.Module):
         # Each item takes a convex combination of all the outputs of each slot.
         combine_weights = jax.nn.softmax(logits, axis=(2, 3))
 
-        w = self.param('w', self.expert_init, (self.num_experts, dim, self.dim))
+        # w = self.param('w', self.expert_init, (self.num_experts, dim, self.dim))
+
+        w = self.param(f'w', nn.with_partitioning(self.expert_init, ('data',)),
+                       (self.num_experts, dim, self.dim))
+
         # print(inputs.shape,dispatch_weights.shape)
 
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
