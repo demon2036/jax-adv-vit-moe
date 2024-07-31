@@ -29,6 +29,7 @@ from einops import einsum
 from flax.typing import Initializer
 from jax._src.typing import DType
 
+from models.moe import PartitionSpec, _convert_partition_spec, with_sharding_constraint
 from utils.utils2 import fixed_sincos2d_embeddings
 
 DenseGeneral = partial(nn.DenseGeneral, kernel_init=init.truncated_normal(0.02))
@@ -36,6 +37,50 @@ Dense = partial(nn.Dense, kernel_init=init.truncated_normal(0.02))
 Conv = partial(nn.Conv, kernel_init=init.truncated_normal(0.02))
 
 CeilOrRound = Literal["ceil", "round"]
+
+
+
+
+
+
+def _dispatch(data: Array, partition_spec: Optional[PartitionSpec]) -> Array:
+    """Dispatches data to experts using all_to_all."""
+    partition_spec = PartitionSpec('data', )
+    partition_spec = _convert_partition_spec(partition_spec)
+    # partition_spec = mesh_sharding(partition_spec)
+    num_groups, num_experts, *item_shape = data.shape
+    data = with_sharding_constraint(data, partition_spec)
+    if num_groups % num_experts == 0:
+        data = data.reshape(num_experts, -1, num_experts, *item_shape)
+        data = jnp.swapaxes(data, 0, 2)
+    else:
+        data = jnp.swapaxes(data, 0, 1)
+    data = data.reshape(-1, *item_shape)
+
+    data = with_sharding_constraint(data, partition_spec)
+    return data.reshape(num_experts, num_groups, *item_shape)
+
+
+def _receive(data: Array, num_groups: int,
+             partition_spec: Optional[PartitionSpec] = None) -> Array:
+    """Receives data from experts using all_to_all."""
+    partition_spec = ('data',)
+    partition_spec = _convert_partition_spec(partition_spec)
+    # partition_spec = mesh_sharding(partition_spec)
+
+    num_experts, num_groups_time_capacity, *item_shape = data.shape
+    # capacity = num_groups_time_capacity // num_groups
+    data = data.reshape(num_experts * num_groups, *item_shape)
+    data = with_sharding_constraint(data, partition_spec)
+    if num_groups % num_experts == 0:
+        data = data.reshape(num_experts, -1, num_experts, *item_shape)
+        data = jnp.swapaxes(data, 0, 2)
+        data = data.reshape(num_groups, num_experts, *item_shape)
+    else:
+        data = data.reshape(num_experts, num_groups, *item_shape)
+        data = jnp.swapaxes(data, 0, 1)
+    data = with_sharding_constraint(data, partition_spec)
+    return data
 
 
 @dataclass
@@ -138,7 +183,7 @@ class SoftRouter(nn.Module):
         dtype = self.dtype or inputs.dtype
         inputs = normalize(inputs.astype(dtype), axis=-1)
         # Create num_experts * num_slots parameters, normalized to have unit norm.
-        _, group_size, dim = inputs.shape
+        batch_size, group_size, dim = inputs.shape
         if self.num_slots is None:
             num_slots = compute_capacity(
                 group_size, self.num_experts, self.capacity_factor,
@@ -176,8 +221,15 @@ class SoftRouter(nn.Module):
 
         w = self.param('w', self.expert_init, (self.num_experts, dim, self.dim))
         # print(inputs.shape,dispatch_weights.shape)
+
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
-        x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
+
+        x = _dispatch(x, None)
+        x = jnp.einsum('nbd,ndk->nbk', x, w, )
+        x = _receive(x, batch_size)
+        print(x.shape)
+
+        # x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
         x = einsum(x, combine_weights, 'b n p d,b m n p->b m d')
         return x
 
