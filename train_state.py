@@ -131,7 +131,7 @@ def create_train_state(rng,
     state_sharding = nn.get_sharding(abstract_variables, mesh)
 
     jit_init_fn = jax.jit(init_fn, static_argnums=(1, 2),
-                          # in_shardings=x_sharding,  # PRNG key and x
+                          in_shardings=x_sharding,  # PRNG key and x
                           out_shardings=state_sharding)
 
     state = jit_init_fn(input_data, model, tx)

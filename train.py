@@ -218,7 +218,7 @@ def train_and_evaluate(args):
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
     train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding)
-    state, state_sharding = create_train_state(init_rng, sharding, mesh,
+    state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
                                                heads=args.heads,
