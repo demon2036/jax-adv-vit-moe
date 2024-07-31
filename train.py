@@ -203,19 +203,9 @@ def train_and_evaluate(args):
 
     device_mesh = mesh_utils.create_device_mesh(mesh_shape)
     mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
-    if jax.process_index()==0:
-        print(device_mesh.shape)
-
-    device_mesh_x = mesh_utils.create_device_mesh((jax.device_count(),))
-    if jax.process_index() == 0:
-        print(device_mesh_x.shape)
-
-        print(device_mesh)
-        print(device_mesh_x)
 
 
-    while True:
-        pass
+    device_mesh = device_mesh.reshape(-1)
 
 
 
