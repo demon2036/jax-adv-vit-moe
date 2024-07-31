@@ -1,4 +1,4 @@
-export EPOCH=2000 TRAIN_BATCH_SIZE=1024 WARMUP_EPOCH=100
+export EPOCH=2000 TRAIN_BATCH_SIZE=1024 WARMUP_EPOCH=5
 export LIBTPU_INT_ARGS="--xla_enable_async_all_gather=true TPU_MEGACORE=MEGACORE_DENSE"
 
 
@@ -18,7 +18,7 @@ python -u train.py \
     --dropout 0.0  \
     --droppath 0.0  \
     --train-batch-size $TRAIN_BATCH_SIZE \
-    --learning-rate 1e-4 \
+    --learning-rate 3e-4 \
     --weight-decay 0.05 \
     --adam-b1 0.9 \
     --adam-b2 0.99 \
