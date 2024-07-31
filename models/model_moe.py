@@ -371,7 +371,7 @@ class FeedForward(ViTBase, nn.Module):
 
 class ViTLayer(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
-    num_experts: int = 32
+    num_experts: int = 256
     num_slots: Optional[int] = None
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
