@@ -83,4 +83,7 @@ def eval_step(state, data):
 
     metrics = jax.tree_util.tree_map(lambda x: (x * (labels != -1)).sum(), metrics)
 
+    metrics = jax.tree_util.tree_map(jnp.mean, metrics)
+
+
     return metrics
