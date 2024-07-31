@@ -78,8 +78,6 @@ CeilOrRound = Literal["ceil", "round"]
 #     return data
 
 
-
-
 def _dispatch(data: Array, partition_spec: Optional[PartitionSpec]) -> Array:
     """Dispatches data to experts using all_to_all."""
     partition_spec = PartitionSpec('data', )
@@ -118,11 +116,6 @@ def _receive(data: Array, num_groups: int,
         data = jnp.swapaxes(data, 0, 1)
     data = with_sharding_constraint(data, partition_spec)
     return data
-
-
-
-
-
 
 
 @dataclass
@@ -369,15 +362,10 @@ class FeedForward(ViTBase, nn.Module):
 #         return x
 
 
-
-
-
-
-
-
 class ViTLayer(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
-    num_experts: int
+
+    num_experts: int = 256
     num_slots: Optional[int] = None
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
@@ -397,10 +385,10 @@ class ViTLayer(ViTBase, nn.Module):
         x = inputs
         for i in range(6):
             w = self.param(f'w_{i}', self.expert_init,
-                           (256, dim, 4*dim))
+                           (self.num_experts, dim, 4 * dim))
 
             w2 = self.param(f'w2_{i}', self.expert_init,
-                           (256, 4*dim, dim))
+                            (self.num_experts, 4 * dim, dim))
 
             norm = nn.LayerNorm()
             mha = Attention()
@@ -419,10 +407,6 @@ class ViTLayer(ViTBase, nn.Module):
         # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('data', 'model')))
 
         return x
-
-
-
-
 
 
 # class ViTLayer(ViTBase, nn.Module):
@@ -527,8 +511,7 @@ class ViT(ViTBase, nn.Module):
         # #use_moe=False if i < 6 else True,
         # self.layer = [layer_fn(**(self.kwargs | {'use_moe': False if i < 6 else True})) for i in range(self.layers)]
 
-        self.layer=ViTLayer(**self.kwargs)
-
+        self.layer = ViTLayer(**self.kwargs)
 
         # self.norm = nn.LayerNorm()
 
@@ -545,8 +528,7 @@ class ViT(ViTBase, nn.Module):
         # for layer in self.layer:
         #     x = layer(x, det)
 
-
-        x=self.layer(x)
+        x = self.layer(x)
 
         x = self.norm(x)
 
