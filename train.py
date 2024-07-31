@@ -215,9 +215,9 @@ def train_and_evaluate(args):
 
     x_sharding = mesh_sharding(PartitionSpec('experts', 'replicate'))
 
-
-    print(mesh.local_devices)
-    print(x_sharding.addressable_devices)
+    if jax.process_index()==0:
+        print(mesh.local_devices)
+        print(x_sharding.addressable_devices)
 
     while True:
         pass
