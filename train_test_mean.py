@@ -11,7 +11,6 @@ from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 
 from prefetch import prefetch_to_device
-from test_mesh import get_hardware_mesh_tpu, get_auto_logical_mesh_tpu
 from train_state import create_train_state, EMATrainState
 
 from training import apply_model_trade, eval_step
@@ -96,12 +95,8 @@ def train_and_evaluate(args):
 
     rng, init_rng = jax.random.split(rng)
 
-    # device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
-    # mesh = Mesh(device_mesh, axis_names=('data',))
-
-    hardware_mesh = get_hardware_mesh_tpu(jax.devices())
-
-    mesh = get_auto_logical_mesh_tpu(128, hardware_mesh)
+    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
+    mesh = Mesh(device_mesh, axis_names=('data',))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
@@ -199,11 +194,22 @@ def train_and_evaluate(args):
 
     rng, init_rng = jax.random.split(rng)
 
-    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
-    mesh = Mesh(device_mesh, axis_names=('data',))
+    device_count = jax.device_count()
+    experts = 4
+    replicate = device_count // experts
+    assert replicate * experts == device_count
+
+    device_mesh = mesh_utils.create_device_mesh((experts, replicate))
+    mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
+
+    sharding= NamedSharding(mesh, PartitionSpec('experts', 'replicate'))
+
+
+    device_mesh_data = mesh_utils.create_device_mesh((device_count,))
+    mesh_data = Mesh(device_mesh_data, axis_names=('data', ))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
-        return NamedSharding(mesh, pspec)
+        return NamedSharding(mesh_data, pspec)
 
     x_sharding = mesh_sharding(PartitionSpec('data'))
 
@@ -213,7 +219,7 @@ def train_and_evaluate(args):
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
     train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding)
-    state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
+    state, state_sharding = create_train_state(init_rng, sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
                                                heads=args.heads,
@@ -261,25 +267,25 @@ def train_and_evaluate(args):
 
             state, metrics = train_step_jit(state, data, train_rng)
 
-            # if step % args.log_interval == 0:
-            #     if jax.process_index() == 0:
-            #         average_meter.update(**metrics)
-            #         metrics = average_meter.summary('train/')
-            #         wandb.log(metrics, step)
-            #
-            # if step % args.eval_interval == 0:
-            #     for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
-            #         data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
-            #                                       data)
-            #
-            #         eval_metrics = eval_step_jit(state, data)
-            #         if jax.process_index() == 0:
-            #             average_meter.update(**eval_metrics)
-            #     if jax.process_index() == 0:
-            #         eval_metrics = average_meter.summary("val/")
-            #         num_samples = eval_metrics.pop("val/num_samples")
-            #         eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, eval_metrics)
-            #         wandb.log(eval_metrics, step)
+            if step % args.log_interval == 0:
+                if jax.process_index() == 0:
+                    average_meter.update(**metrics)
+                    metrics = average_meter.summary('train/')
+                    wandb.log(metrics, step)
+
+            if step % args.eval_interval == 0:
+                for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
+                    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+                                                  data)
+
+                    eval_metrics = eval_step_jit(state, data)
+                    if jax.process_index() == 0:
+                        average_meter.update(**eval_metrics)
+                if jax.process_index() == 0:
+                    eval_metrics = average_meter.summary("val/")
+                    num_samples = eval_metrics.pop("val/num_samples")
+                    eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, eval_metrics)
+                    wandb.log(eval_metrics, step)
 
     return eval_metrics
 

@@ -202,11 +202,10 @@ def train_and_evaluate(args):
     device_mesh = mesh_utils.create_device_mesh((experts, replicate))
     mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
 
-    sharding= NamedSharding(mesh, PartitionSpec('experts', 'replicate'))
-
+    sharding = NamedSharding(mesh, PartitionSpec('experts', 'replicate'))
 
     device_mesh_data = mesh_utils.create_device_mesh((device_count,))
-    mesh_data = Mesh(device_mesh_data, axis_names=('data', ))
+    mesh_data = Mesh(device_mesh_data, axis_names=('data',))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh_data, pspec)
