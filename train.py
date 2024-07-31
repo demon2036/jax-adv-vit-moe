@@ -177,7 +177,7 @@ def train_and_evaluate(args):
                 if jax.process_index() == 0:
                     eval_metrics = average_meter.summary("val/")
                     num_samples = eval_metrics.pop("val/num_samples")
-                    eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, metrics)
+                    eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, eval_metrics)
                     wandb.log(eval_metrics, step)
 
     return eval_metrics
