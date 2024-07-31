@@ -217,7 +217,7 @@ def train_and_evaluate(args):
                                                                   test_shard_path=args.valid_dataset_shards,
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
-    train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding, mesh_shape)
+    # train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding, mesh_shape)
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
@@ -247,7 +247,11 @@ def train_and_evaluate(args):
     # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
 
     train_step_jit = jax.jit(apply_model_trade,
-                             in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
+                             in_shardings=(state_sharding,
+                                           [None,None],
+                                           # [x_sharding, x_sharding],
+
+                                           mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
 
     eval_step_jit = jax.jit(eval_step,

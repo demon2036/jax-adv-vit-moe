@@ -4,6 +4,7 @@ import flax
 import flax.linen as nn
 import optax
 import einops
+from jax import NamedSharding
 
 from attacks.pgd import pgd_attack3
 from trade.trade import trade
@@ -18,6 +19,23 @@ EPSILON = 8 / 255  # @param{type:"number"}
 
 
 def apply_model_trade(state, data, key):
+
+
+    def constraint(d):
+        b,*res=d.shape
+
+        d=d.reshape((8,4)+res)
+        pspec = jax.sharding.PartitionSpec(('expert', 'replica'))
+        d=jax.lax.with_sharding_constraint(d,NamedSharding(pspec))
+        return d.reshape(b,*res)
+
+
+
+    data=jax.tree_util.tree_map(constraint,data)
+
+
+
+
     images, labels = data
 
     images = einops.rearrange(images, 'b c h w->b h w c')
