@@ -39,10 +39,6 @@ Conv = partial(nn.Conv, kernel_init=init.truncated_normal(0.02))
 CeilOrRound = Literal["ceil", "round"]
 
 
-
-
-
-
 def _dispatch(data: Array, partition_spec: Optional[PartitionSpec]) -> Array:
     """Dispatches data to experts using all_to_all."""
     partition_spec = PartitionSpec('data', )
@@ -301,28 +297,109 @@ class FeedForward(ViTBase, nn.Module):
         return self.drop(self.w2(self.drop(nn.gelu(self.w1(x)), det)), det)
 
 
+# class ViTLayer(ViTBase, nn.Module):
+#     def setup(self):
+#         self.attn = Attention(**self.kwargs)
+#         if self.use_kan:
+#             self.ff = KANLayer(self.polynomial_degree)
+#         else:
+#             self.ff = FeedForward(**self.kwargs)
+#
+#         self.norm1 = nn.LayerNorm()
+#         self.norm2 = nn.LayerNorm()
+#         self.drop = nn.Dropout(self.droppath, broadcast_dims=(1, 2))
+#
+#         self.scale1 = self.scale2 = 1.0
+#         if self.layerscale:
+#             self.scale1 = self.param("scale1", init.constant(1e-4), (self.dim,))
+#             self.scale2 = self.param("scale2", init.constant(1e-4), (self.dim,))
+#             # self.scale1 = self.param("scale1", init.constant(1e-6), (self.dim,))
+#             # self.scale2 = self.param("scale2", init.constant(1e-6), (self.dim,))
+#
+#     def __call__(self, x: Array, det: bool = True) -> Array:
+#         x = x + self.drop(self.scale1 * self.attn(self.norm1(x), det), det)
+#         x = x + self.drop(self.scale2 * self.ff(self.norm2(x), det), det)
+#         return x
+
+
 class ViTLayer(ViTBase, nn.Module):
-    def setup(self):
-        self.attn = Attention(**self.kwargs)
-        if self.use_kan:
-            self.ff = KANLayer(self.polynomial_degree)
-        else:
-            self.ff = FeedForward(**self.kwargs)
+    """Soft router merging tokens as inputs/outputs of the experts."""
+    num_experts: int = 32
+    num_slots: Optional[int] = None
+    capacity_factor: Optional[float] = 1.0
+    noise_std: float = 0.0
+    deterministic: bool = False
+    dtype: Optional[DType] = jnp.bfloat16
+    mu_init: Initializer = jax.nn.initializers.lecun_normal()
+    expert_init: Initializer = jax.nn.initializers.lecun_normal()
+    scale_init: Initializer = jax.nn.initializers.ones
+    precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
-        self.norm1 = nn.LayerNorm()
-        self.norm2 = nn.LayerNorm()
-        self.drop = nn.Dropout(self.droppath, broadcast_dims=(1, 2))
+    @nn.compact
+    def __call__(self, inputs: Array):
+        batch_size, group_size, dim = inputs.shape
 
-        self.scale1 = self.scale2 = 1.0
-        if self.layerscale:
-            self.scale1 = self.param("scale1", init.constant(1e-4), (self.dim,))
-            self.scale2 = self.param("scale2", init.constant(1e-4), (self.dim,))
-            # self.scale1 = self.param("scale1", init.constant(1e-6), (self.dim,))
-            # self.scale2 = self.param("scale2", init.constant(1e-6), (self.dim,))
+        # inputs = nn.Dense(dim)(inputs)
 
-    def __call__(self, x: Array, det: bool = True) -> Array:
-        x = x + self.drop(self.scale1 * self.attn(self.norm1(x), det), det)
-        x = x + self.drop(self.scale2 * self.ff(self.norm2(x), det), det)
+        x = inputs
+
+        for i in range(6):
+            norm = nn.LayerNorm()
+            mha = Attention()
+
+            x = x + mha(norm(x))
+            # x = x + norm(x)
+
+            w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('model',)),
+                           (256, dim, 4 * dim))
+
+            w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('model',)),
+                            (256, 4 * dim, dim))
+
+            # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
+            # x=jax.lax.all
+
+            # x = einops.rearrange(x, 'b n d-> n b d')
+
+            # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec(None, 'model')))
+            # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
+
+            # jax.debug.inspect_array_sharding(x, callback=print)
+
+            x = _dispatch(x, None)
+
+            # x = jnp.einsum('bnd,ndk->bnk', x, w, )
+            x = jnp.einsum('nbd,ndk->nbk', x, w, )
+            x = nn.gelu(x)
+            x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+
+            x = _receive(x, batch_size)
+
+            # jax.debug.inspect_array_sharding(x, callback=print)
+
+        # def mul(xs, ws):
+        #     return xs @ ws
+        #
+        # x = jax.vmap(mul)(x, w)
+        # #
+
+        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
+
+        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec(None, 'model')))
+        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model', None)))
+
+        # x = nn.Dense(dim,)(x)
+
+        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model', None)))
+        #
+        # print()
+        # print('inputs mesh')
+        # jax.debug.visualize_array_sharding(inputs[:, :, 0])
+        # print()
+        # print('output x mesh')
+        # jax.debug.visualize_array_sharding(x[:, :, 0])
+        # print()
+
         return x
 
 
