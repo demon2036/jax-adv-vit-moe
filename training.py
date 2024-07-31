@@ -24,7 +24,7 @@ def apply_model_trade(state, data, key):
 
         d = d.reshape((b//4, 4) + res)
         pspec = jax.sharding.PartitionSpec(('expert', 'replica'))
-        d = jax.lax.with_sharding_constraint(d, NamedSharding(pspec))
+        d = jax.lax.with_sharding_constraint(d, pspec)
 
         b=d.shape[:2]
 
