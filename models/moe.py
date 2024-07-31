@@ -37,7 +37,7 @@ import flax.linen.transforms
 import flax.struct
 import jax
 import jax.numpy as jnp
-import partitioning
+import models.partitioning as partitioning
 
 Array = jnp.ndarray
 CeilOrRound = Literal["ceil", "round"]
