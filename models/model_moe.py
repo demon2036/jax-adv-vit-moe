@@ -541,12 +541,15 @@ class ViTLayer(ViTBase, nn.Module):
 
         for i in range(12):
 
+            scale1 = self.param(f"scale1_{i}", init.constant(1e-4), (self.dim,))
+            scale2 = self.param(f"scale2_{i}", init.constant(1e-4), (self.dim,))
+
             # print(x.shape)
 
             norm = nn.LayerNorm()
             mha = Attention(**self.kwargs)
 
-            x = x + mha(norm(x))
+            x = x + mha(norm(x))*scale1
             # x = x + norm(x)
 
             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
@@ -583,7 +586,7 @@ class ViTLayer(ViTBase, nn.Module):
 
                 x = SoftRouter(**self.kwargs)(x)
 
-            x = x + y
+            x = scale2*x + y
 
         return x
 
