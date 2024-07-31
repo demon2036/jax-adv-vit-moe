@@ -13,56 +13,27 @@ from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from prefetch import prefetch_to_device
 from train_state import create_train_state, EMATrainState
 
-from training import apply_model_trade, eval_step
+from training import eval_step
 from dataset import get_train_dataloader
 from utils.utils2 import AverageMeter
 from jax.experimental import multihost_utils
+import einops
 
 
-def block_all(xs):
-    jax.tree_util.tree_map(lambda x: x.block_until_ready(), xs)
-    return xs
+def apply_model_trade(state, data, key):
+    images, labels = data
 
+    images = einops.rearrange(images, 'b c h w->b h w c')
 
-def train_step(x, state: EMATrainState):
-    def loss_fn(params):
-        out = state.apply_fn({'params': params}, x)
-        loss = (jnp.zeros_like(out) - out).mean()
-        return loss
+    images = images.astype(jnp.float32) / 255
+    labels = labels.astype(jnp.float32)
 
-    grad = jax.grad(loss_fn)(state.params)
+    print(images.shape)
+    metrics = dict(accuracy=jnp.ones_like(labels))
 
-    state = state.apply_gradients(grads=grad)
-    return state
+    metrics = jax.tree_util.tree_map(jnp.mean, metrics)
 
-
-# if jax.process_index() == 0:
-#     print(device_mesh)
-#     # print(x_sharding.addressable_devices)
-#     # print()
-#     # print(mesh)
-#     # jax.debug.visualize_sharding((shape[0], shape[1]), sharding=x_sharding)
-#     # jax.debug.visualize_array_sharding(global_batch_array[:, :, 0])
-#     #
-#     # print(x_sharding.addressable_devices)
-#     # print(state_sharding)
-#     # jax.debug.visualize_array_sharding(grad['Dense_0']['kernel'])
-#     # print(params)
-#     print(global_batch_array.shape)
-#     print(end - start)
-
-# print(grad)
-
-
-# grad = block_all(train_step_jit(global_batch_array, state))
-#
-# for i in range(100):
-#     grad = block_all(train_step_jit(global_batch_array, state))
-#
-# start = time.time()
-# for i in range(1000):
-#     grad = block_all(train_step_jit(global_batch_array, state))
-# end = time.time()
+    return state, metrics
 
 
 def convert_to_global_array(x, x_sharding):
@@ -256,25 +227,30 @@ def train_and_evaluate(args):
 
             state, metrics = train_step_jit(state, data, train_rng)
 
-            if step % args.log_interval == 0:
-                if jax.process_index() == 0:
-                    average_meter.update(**metrics)
-                    metrics = average_meter.summary('train/')
-                    wandb.log(metrics, step)
+            if jax.process_index() == 0:
+                average_meter.update(**metrics)
+                metrics = average_meter.summary('train/')
+                print(metrics)
 
-            if step % args.eval_interval == 0:
-                for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
-                    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
-                                                  data)
-
-                    eval_metrics = eval_step_jit(state, data)
-                    if jax.process_index() == 0:
-                        average_meter.update(**eval_metrics)
-                if jax.process_index() == 0:
-                    eval_metrics = average_meter.summary("val/")
-                    num_samples = eval_metrics.pop("val/num_samples")
-                    eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, eval_metrics)
-                    wandb.log(eval_metrics, step)
+            # if step % args.log_interval == 0:
+            #     if jax.process_index() == 0:
+            #         average_meter.update(**metrics)
+            #         metrics = average_meter.summary('train/')
+            #         wandb.log(metrics, step)
+            #
+            # if step % args.eval_interval == 0:
+            #     for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
+            #         data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+            #                                       data)
+            #
+            #         eval_metrics = eval_step_jit(state, data)
+            #         if jax.process_index() == 0:
+            #             average_meter.update(**eval_metrics)
+            #     if jax.process_index() == 0:
+            #         eval_metrics = average_meter.summary("val/")
+            #         num_samples = eval_metrics.pop("val/num_samples")
+            #         eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, eval_metrics)
+            #         wandb.log(eval_metrics, step)
 
     return eval_metrics
 
