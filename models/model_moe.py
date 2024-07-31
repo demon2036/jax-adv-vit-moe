@@ -162,7 +162,7 @@ def compute_capacity(
 class SoftRouter(nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
     dim: int
-    num_experts: int = 8
+    num_experts: int = 32
     num_slots: Optional[int] = None
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
@@ -223,17 +223,11 @@ class SoftRouter(nn.Module):
 
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
 
-        print(x.shape)
+        # x = _dispatch(x, None)
+        # x = jnp.einsum('nbd,ndk->nbk', x, w, )
+        # x = _receive(x, batch_size)
 
-        x = _dispatch(x, None)
-
-        print(x.shape)
-
-        x = jnp.einsum('nbd,ndk->nbk', x, w, )
-        x = _receive(x, batch_size)
-        print(x.shape)
-
-        # x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
+        x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
         x = einsum(x, combine_weights, 'b n p d,b m n p->b m d')
         return x
 
