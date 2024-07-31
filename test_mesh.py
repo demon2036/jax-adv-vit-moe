@@ -33,10 +33,10 @@ def get_hardware_mesh_tpu(devices):
     print(mesh_dict)
 
     nc, nx, ny, nz = map(lambda x: x + 1, sorted(mesh_dict.keys())[-1])
-    print(nc, nx, ny, nz)
+    # print(nc, nx, ny, nz)
     mesh = np.empty((nc, nx, ny, nz), dtype=object)
-    print(mesh)
-    print(mesh_dict)
+    # print(mesh)
+    # print(mesh_dict)
     for (c, x, y, z), device in mesh_dict.items():
         mesh[(c, x, y, z)] = device
     return mesh
@@ -44,18 +44,19 @@ def get_hardware_mesh_tpu(devices):
 
 def get_logical_mesh_default(partitions: Tuple[int, ...], replicas: Tuple[int, ...], hardware_mesh: np.ndarray):
     shape = functools.reduce(lambda a, b: a + b, zip(partitions, replicas))
-    print(shape, partitions, replicas)
+    # print(shape, partitions, replicas)
     devices = hardware_mesh.reshape(shape)
-    print(devices.shape)
+    # print(devices.shape)
     devices = devices.transpose(tuple(range(0, 2 * hardware_mesh.ndim, 2))
                                 + tuple(range(1, 2 * hardware_mesh.ndim, 2))
                                 )
-    print(devices.shape)
+    # print(devices.shape)
     num_partitions=np.prod(partitions)
     num_replicas=np.prod(replicas)
     devices=devices.reshape((num_partitions,num_replicas))
-    print(f'{devices=}')
-    return Mesh(devices=devices,axis_names=('expert','replica'))
+    # print(f'{devices=}')
+    # return Mesh(devices=devices,axis_names=('expert','replica'))
+    return Mesh(devices=devices,axis_names=('data','replica'))
 
 
 def get_logical_mesh(partitions, hardware_mesh: np.ndarray):
@@ -88,7 +89,7 @@ def go():
     mesh = Mesh(device_mesh, ("data",))
 
     if jax.process_index() == 0:
-        print(mesh)
+        # print(mesh)
 
         hardware_mesh = get_hardware_mesh_tpu(jax.devices())
 

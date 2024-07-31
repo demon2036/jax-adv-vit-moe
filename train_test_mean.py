@@ -11,6 +11,7 @@ from jax.experimental import mesh_utils
 from jax.sharding import Mesh, PartitionSpec, NamedSharding
 
 from prefetch import prefetch_to_device
+from test_mesh import get_hardware_mesh_tpu, get_auto_logical_mesh_tpu
 from train_state import create_train_state, EMATrainState
 
 from training import apply_model_trade, eval_step
@@ -95,8 +96,12 @@ def train_and_evaluate(args):
 
     rng, init_rng = jax.random.split(rng)
 
-    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
-    mesh = Mesh(device_mesh, axis_names=('data',))
+    # device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
+    # mesh = Mesh(device_mesh, axis_names=('data',))
+
+    hardware_mesh = get_hardware_mesh_tpu(jax.devices())
+
+    mesh = get_auto_logical_mesh_tpu(128, hardware_mesh)
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
