@@ -350,10 +350,10 @@ class ViTLayer(ViTBase, nn.Module):
             x = x + mha(norm(x))
             # x = x + norm(x)
 
-            w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('model',)),
+            w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('data',)),
                            (256, dim, 4 * dim))
 
-            w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('model',)),
+            w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('data',)),
                             (256, 4 * dim, dim))
 
             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
