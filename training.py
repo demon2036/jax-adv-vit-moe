@@ -19,7 +19,6 @@ EPSILON = 8 / 255  # @param{type:"number"}
 
 def apply_model_trade(state, data, key):
     images, labels = data
-    return state,data
 
     images = einops.rearrange(images, 'b c h w->b h w c')
 
