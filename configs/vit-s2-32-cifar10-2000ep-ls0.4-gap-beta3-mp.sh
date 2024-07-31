@@ -1,4 +1,5 @@
 export EPOCH=6000 TRAIN_BATCH_SIZE=1024 WARMUP_EPOCH=100
+export LIBTPU_INT_ARGS="--xla_enable_async_all_gather=true TPU_MEGACORE=MEGACORE_DENSE"
 
 
 python -u train_test_mean.py \
