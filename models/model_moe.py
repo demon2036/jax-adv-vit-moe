@@ -48,17 +48,16 @@ def _dispatch(data: Array, partition_spec: Optional[PartitionSpec]) -> Array:
     partition_spec = PartitionSpec('data', )
     partition_spec = _convert_partition_spec(partition_spec)
     # partition_spec = mesh_sharding(partition_spec)
-    num_groups, num_experts, *item_shape = data.shape
+    num_groups, num_experts, capacity, *item_shape = data.shape
     data = with_sharding_constraint(data, partition_spec)
     if num_groups % num_experts == 0:
-        data = data.reshape(num_experts, -1, num_experts, *item_shape)
+        data = data.reshape(num_experts, -1, num_experts, capacity, *item_shape)
         data = jnp.swapaxes(data, 0, 2)
     else:
         data = jnp.swapaxes(data, 0, 1)
     data = data.reshape(-1, *item_shape)
-
     data = with_sharding_constraint(data, partition_spec)
-    return data.reshape(num_experts, num_groups, *item_shape)
+    return data.reshape(num_experts, num_groups * capacity, *item_shape)
 
 
 def _receive(data: Array, num_groups: int,
@@ -69,15 +68,15 @@ def _receive(data: Array, num_groups: int,
     # partition_spec = mesh_sharding(partition_spec)
 
     num_experts, num_groups_time_capacity, *item_shape = data.shape
-    # capacity = num_groups_time_capacity // num_groups
-    data = data.reshape(num_experts * num_groups, *item_shape)
+    capacity = num_groups_time_capacity // num_groups
+    data = data.reshape(num_experts * num_groups, capacity, *item_shape)
     data = with_sharding_constraint(data, partition_spec)
     if num_groups % num_experts == 0:
-        data = data.reshape(num_experts, -1, num_experts, *item_shape)
+        data = data.reshape(num_experts, -1, num_experts, capacity, *item_shape)
         data = jnp.swapaxes(data, 0, 2)
-        data = data.reshape(num_groups, num_experts, *item_shape)
+        data = data.reshape(num_groups, num_experts, capacity, *item_shape)
     else:
-        data = data.reshape(num_experts, num_groups, *item_shape)
+        data = data.reshape(num_experts, num_groups, capacity, *item_shape)
         data = jnp.swapaxes(data, 0, 1)
     data = with_sharding_constraint(data, partition_spec)
     return data
