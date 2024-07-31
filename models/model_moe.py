@@ -336,7 +336,7 @@ class ViTLayer(ViTBase, nn.Module):
     precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
     @nn.compact
-    def __call__(self, inputs: Array):
+    def __call__(self, inputs: Array,*args,**kwargs):
         batch_size, group_size, dim = inputs.shape
 
         # inputs = nn.Dense(dim)(inputs)
