@@ -103,6 +103,10 @@ def create_train_state(rng,
             if jax.process_index() == 0:
                 print(p,type(p[-1]),type(p[-2]))
 
+        if jax.process_index() == 0:
+            print(p, 'kernel' in p[idx].key)
+
+
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
             learning_rate: optax.Schedule,
