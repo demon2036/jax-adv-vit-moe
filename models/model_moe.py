@@ -528,7 +528,7 @@ class ViTLayer(ViTBase, nn.Module):
 
         x = inputs
 
-        for i in range(6):
+        for i in range(12):
 
             # print(x.shape)
 
