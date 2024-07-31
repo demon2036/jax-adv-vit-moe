@@ -144,6 +144,7 @@ class ViTBase:
     polynomial_degree: int = 8
 
     use_moe: bool = False
+    # dtype: Any = jnp.bfloat16
 
     @property
     def kwargs(self) -> dict[str, Any]:
@@ -208,7 +209,7 @@ class SoftRouter(ViTBase, nn.Module):
     deterministic: bool = False
     dtype: Optional[DType] = None
     mu_init: Initializer = jax.nn.initializers.lecun_normal()
-    expert_init: Initializer = init.truncated_normal(0.02/10)
+    expert_init: Initializer = init.truncated_normal(0.02 / 10)
     scale_init: Initializer = jax.nn.initializers.ones
     precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
@@ -520,6 +521,7 @@ class FeedForward(ViTBase, nn.Module):
 
 class ViTLayer(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
+
     # num_experts: int = 256
     # num_slots: Optional[int] = None
     # capacity_factor: Optional[float] = 1.0
@@ -549,7 +551,7 @@ class ViTLayer(ViTBase, nn.Module):
             norm = nn.LayerNorm()
             mha = Attention(**self.kwargs)
 
-            x = x + mha(norm(x))*scale1
+            x = x + mha(norm(x)) * scale1
             # x = x + norm(x)
 
             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
@@ -586,7 +588,7 @@ class ViTLayer(ViTBase, nn.Module):
 
                 x = SoftRouter(**self.kwargs)(x)
 
-            x = scale2*x + y
+            x = scale2 * x + y
 
         return x
 

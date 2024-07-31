@@ -296,6 +296,10 @@ def train_and_evaluate(args):
 
 
 if __name__ == "__main__":
+
+    print(jax.devices())
+
+
     jax.config.update('jax_threefry_partitionable', True)
     jax.distributed.initialize()
 
