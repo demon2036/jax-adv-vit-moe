@@ -581,7 +581,7 @@ class ViTLayer(ViTBase, nn.Module):
                 #
                 # x = _receive(x, batch_size)
 
-                x = SoftRouter()(x)
+                x = SoftRouter(**self.kwargs)(x)
 
             x = x + y
 
