@@ -425,6 +425,14 @@ class ViTLayer(ViTBase, nn.Module):
 
             x = _receive(x, batch_size)
 
+
+
+
+
+
+
+
+
             # jax.debug.inspect_array_sharding(x, callback=print)
 
         # def mul(xs, ws):
@@ -459,9 +467,12 @@ class ViT(ViTBase, nn.Module):
         self.drop = nn.Dropout(self.dropout)
 
         # The layer class should be wrapped with `nn.remat` if `grad_ckpt` is enabled.
-        layer_fn = nn.remat(ViTLayer) if self.grad_ckpt else ViTLayer
-        #use_moe=False if i < 6 else True,
-        self.layer = [layer_fn(**(self.kwargs | {'use_moe': False if i < 6 else True})) for i in range(self.layers)]
+        # layer_fn = nn.remat(ViTLayer) if self.grad_ckpt else ViTLayer
+        # #use_moe=False if i < 6 else True,
+        # self.layer = [layer_fn(**(self.kwargs | {'use_moe': False if i < 6 else True})) for i in range(self.layers)]
+
+        self.layer=ViTLayer(**self.kwargs)
+
 
         # self.norm = nn.LayerNorm()
 
@@ -475,8 +486,12 @@ class ViT(ViTBase, nn.Module):
     def __call__(self, x: Array, det: bool = True) -> Array:
         # x = (x - IMAGENET_DEFAULT_MEAN) / IMAGENET_DEFAULT_STD
         x = self.drop(self.embed(x), det)
-        for layer in self.layer:
-            x = layer(x, det)
+        # for layer in self.layer:
+        #     x = layer(x, det)
+
+
+        x=self.layer(x)
+
         x = self.norm(x)
 
         # If the classification head is not defined, then return the output of all
