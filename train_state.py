@@ -82,19 +82,17 @@ def create_train_state(rng,
 
     image_shape = [jax.device_count(), 32, 32, 3]
     if jax.process_index() == 0:
-        print(model.tabulate(rng, jnp.ones(image_shape),depth=2))
+        print(model.tabulate(rng, jnp.ones(image_shape), depth=2))
 
     input_data = jnp.ones(image_shape)
 
     # input_data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
     #                               input_data)
 
-
     #lambda kp, *_: kp[-1].key == "kernel"
-    def f(p,x):
-        if jax.process_index()==0:
-            print(p)
-
+    def f(p, x):
+        if jax.process_index() == 0:
+            print(p,type(p[-1]),type(p[-2]))
 
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
@@ -105,7 +103,7 @@ def create_train_state(rng,
             b1=b1, b2=b2,
             # eps=args.adam_eps,
             weight_decay=weight_decay,
-            mask=partial(jax.tree_util.tree_map_with_path,f ),
+            mask=partial(jax.tree_util.tree_map_with_path, f),
         )
         # if args.lr_decay < 1.0:
         #     layerwise_scales = {
@@ -148,4 +146,4 @@ def create_train_state(rng,
 
     state = jit_init_fn(input_data, model, tx)
 
-    return state,state_sharding
+    return state, state_sharding
