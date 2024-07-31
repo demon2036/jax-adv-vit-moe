@@ -195,7 +195,7 @@ def train_and_evaluate(args):
     rng, init_rng = jax.random.split(rng)
 
     device_count = jax.device_count()
-    experts = 4
+    experts = device_count
     replicate = device_count // experts
     assert replicate * experts == device_count
 
@@ -210,7 +210,7 @@ def train_and_evaluate(args):
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
 
-    x_sharding = mesh_sharding(PartitionSpec('replicate'))
+    x_sharding = mesh_sharding(PartitionSpec('experts','replicate'))
 
     train_dataloader_iter, test_dataloader = get_train_dataloader(args.train_batch_size,
                                                                   shard_path=args.train_dataset_shards,
