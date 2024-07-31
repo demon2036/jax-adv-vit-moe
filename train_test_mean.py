@@ -13,27 +13,56 @@ from jax.sharding import Mesh, PartitionSpec, NamedSharding
 from prefetch import prefetch_to_device
 from train_state import create_train_state, EMATrainState
 
-from training import eval_step
+from training import apply_model_trade, eval_step
 from dataset import get_train_dataloader
 from utils.utils2 import AverageMeter
 from jax.experimental import multihost_utils
-import einops
 
 
-def apply_model_trade(state, data, key):
-    images, labels = data
+def block_all(xs):
+    jax.tree_util.tree_map(lambda x: x.block_until_ready(), xs)
+    return xs
 
-    images = einops.rearrange(images, 'b c h w->b h w c')
 
-    images = images.astype(jnp.float32) / 255
-    labels = labels.astype(jnp.float32)
+def train_step(x, state: EMATrainState):
+    def loss_fn(params):
+        out = state.apply_fn({'params': params}, x)
+        loss = (jnp.zeros_like(out) - out).mean()
+        return loss
 
-    print(images.shape)
-    metrics = dict(accuracy=labels)
+    grad = jax.grad(loss_fn)(state.params)
 
-    metrics = jax.tree_util.tree_map(jnp.mean, metrics)
+    state = state.apply_gradients(grads=grad)
+    return state
 
-    return state, metrics
+
+# if jax.process_index() == 0:
+#     print(device_mesh)
+#     # print(x_sharding.addressable_devices)
+#     # print()
+#     # print(mesh)
+#     # jax.debug.visualize_sharding((shape[0], shape[1]), sharding=x_sharding)
+#     # jax.debug.visualize_array_sharding(global_batch_array[:, :, 0])
+#     #
+#     # print(x_sharding.addressable_devices)
+#     # print(state_sharding)
+#     # jax.debug.visualize_array_sharding(grad['Dense_0']['kernel'])
+#     # print(params)
+#     print(global_batch_array.shape)
+#     print(end - start)
+
+# print(grad)
+
+
+# grad = block_all(train_step_jit(global_batch_array, state))
+#
+# for i in range(100):
+#     grad = block_all(train_step_jit(global_batch_array, state))
+#
+# start = time.time()
+# for i in range(1000):
+#     grad = block_all(train_step_jit(global_batch_array, state))
+# end = time.time()
 
 
 def convert_to_global_array(x, x_sharding):
@@ -53,9 +82,6 @@ def convert_to_global_array(x, x_sharding):
     )
 
     return global_batch_array_x
-
-
-
 
 
 def train_and_evaluate(args):
@@ -118,23 +144,117 @@ def train_and_evaluate(args):
     eval_step_jit = jax.jit(eval_step,
                             in_shardings=(state_sharding, [x_sharding, x_sharding],),
                             out_shardings=None, )
-    data = next(train_dataloader_iter)
+
     with mesh:
         init_step = 1
         disable = not jax.process_index() == 0
 
         for step in tqdm.tqdm(range(init_step, args.training_steps), initial=init_step, total=args.training_steps,
                               disable=disable):
-
+            data = next(train_dataloader_iter)
             # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
             rng, train_rng = jax.random.split(rng)
 
             state, metrics = train_step_jit(state, data, train_rng)
 
-            if jax.process_index() == 0:
-                average_meter.update(**metrics)
-                metrics = average_meter.summary('train/')
-                print(metrics)
+            if step % args.log_interval == 0:
+                # metrics = multihost_utils.process_allgather(metrics)
+                if jax.process_index() == 0:
+                    average_meter.update(**metrics)
+                    metrics = average_meter.summary('train/')
+                    wandb.log(metrics, step)
+
+            if step % args.eval_interval == 0:
+                for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
+                    data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+                                                  data)
+
+                    eval_metrics = eval_step_jit(state, data)
+                    # eval_metrics = multihost_utils.process_allgather(eval_metrics)
+
+                    if jax.process_index() == 0:
+                        average_meter.update(**eval_metrics)
+                if jax.process_index() == 0:
+                    eval_metrics = average_meter.summary("val/")
+                    num_samples = eval_metrics.pop("val/num_samples")
+                    eval_metrics = jax.tree_util.tree_map(lambda x: x / num_samples, eval_metrics)
+                    wandb.log(eval_metrics, step)
+
+    return eval_metrics
+
+
+def train_and_evaluate(args):
+    if jax.process_index() == 0:
+        wandb.init(name=args.name, project=args.project, config=args.__dict__,
+                   settings=wandb.Settings(_disable_stats=True),
+                   config_exclude_keys=['train_dataset_shards', 'valid_dataset_shards', 'train_origin_dataset_shards'])
+        average_meter = AverageMeter(use_latest=["learning_rate"])
+
+    rng = jax.random.key(0)
+
+    rng, init_rng = jax.random.split(rng)
+
+    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
+    mesh = Mesh(device_mesh, axis_names=('data',))
+
+    def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
+        return NamedSharding(mesh, pspec)
+
+    x_sharding = mesh_sharding(PartitionSpec('data'))
+
+    train_dataloader_iter, test_dataloader = get_train_dataloader(args.train_batch_size,
+                                                                  shard_path=args.train_dataset_shards,
+                                                                  test_shard_path=args.valid_dataset_shards,
+                                                                  origin_shard_path=args.train_origin_dataset_shards)
+
+    train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding)
+    state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
+                                               layers=args.layers,
+                                               dim=args.dim,
+                                               heads=args.heads,
+                                               labels=args.labels,
+                                               layerscale=args.layerscale,
+                                               patch_size=args.patch_size,
+                                               image_size=args.image_size,
+                                               posemb=args.posemb,
+                                               pooling=args.pooling,
+                                               dropout=args.dropout,
+                                               droppath=args.droppath,
+                                               warmup_steps=args.warmup_steps,
+                                               training_steps=args.training_steps,
+                                               learning_rate=args.learning_rate,
+                                               weight_decay=args.weight_decay,
+                                               ema_decay=args.ema_decay,
+                                               trade_beta=args.beta,
+                                               label_smoothing=args.label_smoothing,
+                                               use_fc_norm=args.use_fc_norm,
+                                               reduce_include_prefix=args.reduce_include_prefix,
+                                               b1=args.adam_b1,
+                                               b2=args.adam_b2,
+                                               clip_grad=args.clip_grad,
+                                               )
+
+    # train_step_jit = jax.jit(train_step, in_shardings=(x_sharding, state_sharding), out_shardings=state_sharding, )
+
+    train_step_jit = jax.jit(apply_model_trade,
+                             in_shardings=(state_sharding, [x_sharding, x_sharding], mesh_sharding(())),
+                             out_shardings=(state_sharding, None), donate_argnums=0)
+
+    eval_step_jit = jax.jit(eval_step,
+                            in_shardings=(state_sharding, [x_sharding, x_sharding],),
+                            out_shardings=None, )
+
+    with mesh:
+        init_step = 1
+        disable = not jax.process_index() == 0
+
+        for step in tqdm.tqdm(range(init_step, args.training_steps), initial=init_step, total=args.training_steps,
+                              disable=disable):
+            data = next(train_dataloader_iter)
+            # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
+            rng, train_rng = jax.random.split(rng)
+
+            state, metrics = train_step_jit(state, data, train_rng)
 
             # if step % args.log_interval == 0:
             #     if jax.process_index() == 0:
