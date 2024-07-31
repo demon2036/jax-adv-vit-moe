@@ -208,7 +208,7 @@ class SoftRouter(ViTBase, nn.Module):
     deterministic: bool = False
     dtype: Optional[DType] = None
     mu_init: Initializer = jax.nn.initializers.lecun_normal()
-    expert_init: Initializer = init.truncated_normal(0.02)
+    expert_init: Initializer = init.truncated_normal(0.02/10)
     scale_init: Initializer = jax.nn.initializers.ones
     precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
