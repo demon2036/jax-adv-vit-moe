@@ -89,7 +89,7 @@ def train_and_evaluate(args):
         wandb.init(name=args.name, project=args.project, config=args.__dict__,
                    settings=wandb.Settings(_disable_stats=True),
                    config_exclude_keys=['train_dataset_shards', 'valid_dataset_shards', 'train_origin_dataset_shards'])
-    average_meter = AverageMeter(use_latest=["learning_rate"])
+        average_meter = AverageMeter(use_latest=["learning_rate"])
 
     rng = jax.random.key(0)
 

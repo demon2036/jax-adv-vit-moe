@@ -54,8 +54,7 @@ def apply_model_trade(state, data, key):
 
     metrics = metrics | state.opt_state.hyperparams
 
-    metrics=jax.tree_util.tree_map(jnp.mean,metrics)
-
+    metrics = jax.tree_util.tree_map(jnp.mean, metrics)
 
     return state, metrics
 
@@ -84,6 +83,5 @@ def eval_step(state, data):
     metrics = jax.tree_util.tree_map(lambda x: (x * (labels != -1)).sum(), metrics)
 
     metrics = jax.tree_util.tree_map(jnp.mean, metrics)
-
 
     return metrics
