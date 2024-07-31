@@ -2,7 +2,7 @@ export EPOCH=2000 TRAIN_BATCH_SIZE=1024 WARMUP_EPOCH=100
 export LIBTPU_INT_ARGS="--xla_enable_async_all_gather=true TPU_MEGACORE=MEGACORE_DENSE"
 
 
-python -u train_test_mean.py \
+python -u train.py \
     --train-dataset-shards "$GCS_DATASET_DIR/cifar10-50m-wds/shards-{00000..00999}.tar" \
     --valid-dataset-shards  "$GCS_DATASET_DIR/cifar10-test-wds/shards-{00000..00099}.tar" \
     --train-origin-dataset-shards "$GCS_DATASET_DIR/cifar10-train-wds/shards-{00000..00099}.tar" \
