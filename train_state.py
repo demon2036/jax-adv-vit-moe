@@ -80,7 +80,7 @@ def create_train_state(rng,
 
     image_shape = [jax.device_count(), 32, 32, 3]
     if jax.process_index() == 0:
-        print(model.tabulate(rng, jnp.ones(image_shape)))
+        print(model.tabulate(rng, jnp.ones(image_shape),depth=2))
 
     input_data = jnp.ones(image_shape)
 
