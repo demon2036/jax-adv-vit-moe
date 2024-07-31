@@ -24,6 +24,8 @@ from models.model_moe import ViT
 
 import os
 
+from prefetch import convert_to_global_array
+
 
 class EMATrainState(flax.training.train_state.TrainState):
     label_smoothing: int
@@ -84,6 +86,10 @@ def create_train_state(rng,
 
     input_data = jnp.ones(image_shape)
 
+    input_data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding),
+                                  input_data)
+
+
     @partial(optax.inject_hyperparams, hyperparam_dtype=jnp.float32)
     def create_optimizer_fn(
             learning_rate: optax.Schedule,
@@ -131,7 +137,7 @@ def create_train_state(rng,
     state_sharding = nn.get_sharding(abstract_variables, mesh)
 
     jit_init_fn = jax.jit(init_fn, static_argnums=(1, 2),
-                          in_shardings=None,  # PRNG key and x
+                          in_shardings=x_sharding,  # PRNG key and x
                           out_shardings=state_sharding)
 
     state = jit_init_fn(input_data, model, tx)
