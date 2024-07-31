@@ -194,8 +194,13 @@ def train_and_evaluate(args):
 
     rng, init_rng = jax.random.split(rng)
 
-    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
-    mesh = Mesh(device_mesh, axis_names=('data',))
+    device_count = jax.device_count()
+    experts = 4
+    replicate = device_count // experts
+    assert replicate * experts == device_count
+
+    device_mesh = mesh_utils.create_device_mesh((experts, replicate))
+    mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
