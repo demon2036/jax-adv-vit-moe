@@ -208,7 +208,7 @@ def train_and_evaluate(args):
     mesh_x = Mesh(device_mesh, axis_names=('data',))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
-        return NamedSharding(mesh, pspec)
+        return NamedSharding(mesh_x, pspec)
 
     x_sharding = mesh_sharding(PartitionSpec('data'))
 
@@ -217,7 +217,7 @@ def train_and_evaluate(args):
                                                                   test_shard_path=args.valid_dataset_shards,
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
-    # train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding, mesh_shape)
+    train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding, mesh_shape)
 
 
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
