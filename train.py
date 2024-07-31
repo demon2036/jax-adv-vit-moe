@@ -157,6 +157,10 @@ def train_and_evaluate(args):
 
             state, metrics = train_step_jit(state, data, train_rng)
 
+            if jax.process_index() == 0:
+                print(metrics)
+
+
             # if step % args.log_interval == 0:
             #     metrics = multihost_utils.process_allgather(metrics)
             #     if jax.process_index() == 0:

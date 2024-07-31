@@ -54,6 +54,9 @@ def apply_model_trade(state, data, key):
 
     metrics = metrics | state.opt_state.hyperparams
 
+    metrics=jax.tree_util.tree_map(jnp.mean,metrics)
+
+
     return state, metrics
 
 
