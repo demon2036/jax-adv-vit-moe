@@ -369,9 +369,15 @@ class FeedForward(ViTBase, nn.Module):
 #         return x
 
 
+
+
+
+
+
+
 class ViTLayer(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
-    num_experts: int = 256
+    num_experts: int
     num_slots: Optional[int] = None
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
@@ -383,82 +389,132 @@ class ViTLayer(ViTBase, nn.Module):
     precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
     @nn.compact
-    def __call__(self, inputs: Array,*args,**kwargs):
-        batch_size, group_size, dim = inputs.shape
-
-        # inputs = nn.Dense(dim)(inputs)
-
+    def __call__(self, inputs: Array):
+        _, group_size, dim = inputs.shape
+        # Normalize inputs to have unit norm.
+        # w = self.param('w', nn.with_partitioning(self.expert_init, ('model', None)),
+        #                (256, dim, dim))
         x = inputs
-
         for i in range(6):
+            w = self.param(f'w_{i}', self.expert_init,
+                           (256, dim, 4*dim))
 
-            # print(x.shape)
+            w2 = self.param(f'w2_{i}', self.expert_init,
+                           (256, 4*dim, dim))
 
             norm = nn.LayerNorm()
-            mha = Attention(**self.kwargs)
+            mha = Attention()
 
             x = x + mha(norm(x))
-            # x = x + norm(x)
+            # x = x + (norm(x))
 
-            w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('data',)),
-                           (self.num_experts, dim, 4 * dim))
-
-            w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('data',)),
-                            (self.num_experts, 4 * dim, dim))
-
-            # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
-            # x=jax.lax.all
-
-            # x = einops.rearrange(x, 'b n d-> n b d')
-
-            # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec(None, 'model')))
-            # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
-
-            # jax.debug.inspect_array_sharding(x, callback=print)
-
-            x = _dispatch(x, None)
-
-            # x = jnp.einsum('bnd,ndk->bnk', x, w, )
-            x = jnp.einsum('nbd,ndk->nbk', x, w, )
+            x = jnp.einsum('bnd,ndk->bnk', x, w, )
             x = nn.gelu(x)
-            x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+            x = jnp.einsum('bnd,ndk->bnk', x, w2, )
 
-            x = _receive(x, batch_size)
+            # x = nn.Dense(dim)(x)
 
+        # jax.debug.visualize_array_sharding(inputs[:,:,0])
 
-
-
-
-
-
-
-
-            # jax.debug.inspect_array_sharding(x, callback=print)
-
-        # def mul(xs, ws):
-        #     return xs @ ws
-        #
-        # x = jax.vmap(mul)(x, w)
-        # #
-
-        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
-
-        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec(None, 'model')))
-        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model', None)))
-
-        # x = nn.Dense(dim,)(x)
-
-        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model', None)))
-        #
-        # print()
-        # print('inputs mesh')
-        # jax.debug.visualize_array_sharding(inputs[:, :, 0])
-        # print()
-        # print('output x mesh')
-        # jax.debug.visualize_array_sharding(x[:, :, 0])
-        # print()
+        # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('data', 'model')))
 
         return x
+
+
+
+
+
+
+# class ViTLayer(ViTBase, nn.Module):
+#     """Soft router merging tokens as inputs/outputs of the experts."""
+#     num_experts: int = 256
+#     num_slots: Optional[int] = None
+#     capacity_factor: Optional[float] = 1.0
+#     noise_std: float = 0.0
+#     deterministic: bool = False
+#     dtype: Optional[DType] = jnp.bfloat16
+#     mu_init: Initializer = jax.nn.initializers.lecun_normal()
+#     expert_init: Initializer = jax.nn.initializers.lecun_normal()
+#     scale_init: Initializer = jax.nn.initializers.ones
+#     precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
+#
+#     @nn.compact
+#     def __call__(self, inputs: Array,*args,**kwargs):
+#         batch_size, group_size, dim = inputs.shape
+#
+#         # inputs = nn.Dense(dim)(inputs)
+#
+#         x = inputs
+#
+#         for i in range(6):
+#
+#             # print(x.shape)
+#
+#             norm = nn.LayerNorm()
+#             mha = Attention(**self.kwargs)
+#
+#             x = x + mha(norm(x))
+#             # x = x + norm(x)
+#
+#             w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('data',)),
+#                            (self.num_experts, dim, 4 * dim))
+#
+#             w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('data',)),
+#                             (self.num_experts, 4 * dim, dim))
+#
+#             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
+#             # x=jax.lax.all
+#
+#             # x = einops.rearrange(x, 'b n d-> n b d')
+#
+#             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec(None, 'model')))
+#             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
+#
+#             # jax.debug.inspect_array_sharding(x, callback=print)
+#
+#             x = _dispatch(x, None)
+#
+#             # x = jnp.einsum('bnd,ndk->bnk', x, w, )
+#             x = jnp.einsum('nbd,ndk->nbk', x, w, )
+#             x = nn.gelu(x)
+#             x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+#
+#             x = _receive(x, batch_size)
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#             # jax.debug.inspect_array_sharding(x, callback=print)
+#
+#         # def mul(xs, ws):
+#         #     return xs @ ws
+#         #
+#         # x = jax.vmap(mul)(x, w)
+#         # #
+#
+#         # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
+#
+#         # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec(None, 'model')))
+#         # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model', None)))
+#
+#         # x = nn.Dense(dim,)(x)
+#
+#         # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model', None)))
+#         #
+#         # print()
+#         # print('inputs mesh')
+#         # jax.debug.visualize_array_sharding(inputs[:, :, 0])
+#         # print()
+#         # print('output x mesh')
+#         # jax.debug.visualize_array_sharding(x[:, :, 0])
+#         # print()
+#
+#         return x
 
 
 class ViT(ViTBase, nn.Module):
