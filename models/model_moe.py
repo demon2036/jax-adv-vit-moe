@@ -538,7 +538,7 @@ class ViTLayer(ViTBase, nn.Module):
             norm = nn.LayerNorm()
             mha = Attention(**self.kwargs)
 
-            x = x + mha(norm(x))
+            # x = x + mha(norm(x))
             # x = x + norm(x)
 
             # x = with_sharding_constraint(x, mesh_sharding(PartitionSpec('model')))
