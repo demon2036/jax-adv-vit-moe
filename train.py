@@ -218,6 +218,8 @@ def train_and_evaluate(args):
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
     # train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding, mesh_shape)
+
+
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
@@ -265,6 +267,7 @@ def train_and_evaluate(args):
         for step in tqdm.tqdm(range(init_step, args.training_steps), initial=init_step, total=args.training_steps,
                               disable=disable):
             data = next(train_dataloader_iter)
+            data=jax.tree_util.tree_map(np.array,data)
             # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
             rng, train_rng = jax.random.split(rng)
 
