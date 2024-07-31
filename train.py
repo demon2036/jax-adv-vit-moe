@@ -204,32 +204,20 @@ def train_and_evaluate(args):
     device_mesh = mesh_utils.create_device_mesh(mesh_shape)
     mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
 
-
-
-
-
-
+    device_mesh = mesh_utils.create_device_mesh((jax.device_count(),))
+    mesh_x = Mesh(device_mesh, axis_names=('data',))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
-        return NamedSharding(mesh, pspec)
+        return NamedSharding(mesh_x, pspec)
 
-    x_sharding = mesh_sharding(PartitionSpec('experts', 'replicate'))
-
-    if jax.process_index()==0:
-        print(mesh.local_devices)
-        print(x_sharding.addressable_devices)
-
-    while True:
-        pass
-
-
+    x_sharding = mesh_sharding(PartitionSpec('data'))
 
     train_dataloader_iter, test_dataloader = get_train_dataloader(args.train_batch_size,
                                                                   shard_path=args.train_dataset_shards,
                                                                   test_shard_path=args.valid_dataset_shards,
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
-    train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding)
+    train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding, mesh_shape)
     state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,

@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 
 
-def convert_to_global_array(x, x_sharding):
+def convert_to_global_array(x, x_sharding,mesh_shape):
     b, *res = x.shape
     x = np.array(x)
 
@@ -31,6 +31,7 @@ def prefetch_to_device(
         iterator,
         size: int,
         data_sharding=None,
+        mesh_shape=None
 ):
     """Iterates data and transfers it to devices creating jax.Arrays.
 
@@ -59,7 +60,7 @@ def prefetch_to_device(
 
         def enqueue(n):
             for data in itertools.islice(iterator, n):
-                data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=data_sharding),data)
+                data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=data_sharding,mesh_shape=mesh_shape),data)
                 queue.append(data)
 
         enqueue(size)
