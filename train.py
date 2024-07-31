@@ -210,7 +210,12 @@ def train_and_evaluate(args):
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
         return NamedSharding(mesh, pspec)
 
-    x_sharding = mesh_sharding(PartitionSpec('experts',))
+    print(sharding.mesh.shape)
+
+    while True:
+        pass
+
+    x_sharding = mesh_sharding(PartitionSpec('experts', ))
 
     train_dataloader_iter, test_dataloader = get_train_dataloader(args.train_batch_size,
                                                                   shard_path=args.train_dataset_shards,
