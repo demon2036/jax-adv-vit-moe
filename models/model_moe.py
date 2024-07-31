@@ -344,6 +344,9 @@ class ViTLayer(ViTBase, nn.Module):
         x = inputs
 
         for i in range(6):
+
+            print(x.shape)
+
             norm = nn.LayerNorm()
             mha = Attention()
 
