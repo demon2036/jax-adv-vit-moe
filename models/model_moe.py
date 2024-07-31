@@ -520,16 +520,16 @@ class FeedForward(ViTBase, nn.Module):
 
 class ViTLayer(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
-    num_experts: int = 256
-    num_slots: Optional[int] = None
-    capacity_factor: Optional[float] = 1.0
-    noise_std: float = 0.0
-    deterministic: bool = False
-    dtype: Optional[DType] = jnp.bfloat16
-    mu_init: Initializer = jax.nn.initializers.lecun_normal()
-    expert_init: Initializer = jax.nn.initializers.lecun_normal()
-    scale_init: Initializer = jax.nn.initializers.ones
-    precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
+    # num_experts: int = 256
+    # num_slots: Optional[int] = None
+    # capacity_factor: Optional[float] = 1.0
+    # noise_std: float = 0.0
+    # deterministic: bool = False
+    # dtype: Optional[DType] = jnp.bfloat16
+    # mu_init: Initializer = jax.nn.initializers.lecun_normal()
+    # expert_init: Initializer = jax.nn.initializers.lecun_normal()
+    # scale_init: Initializer = jax.nn.initializers.ones
+    # precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
     @nn.compact
     def __call__(self, inputs: Array, *args, **kwargs):
