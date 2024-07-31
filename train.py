@@ -250,9 +250,8 @@ def train_and_evaluate(args):
 
     train_step_jit = jax.jit(apply_model_trade,
                              in_shardings=(state_sharding,
-                                           [None,None],
-                                           # [x_sharding, x_sharding],
-
+                                           # [None,None],
+                                           [x_sharding, x_sharding],
                                            mesh_sharding(())),
                              out_shardings=(state_sharding, None), donate_argnums=0)
 
