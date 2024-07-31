@@ -223,11 +223,11 @@ class SoftRouter(nn.Module):
 
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
 
-        # x = _dispatch(x, None)
-        # x = jnp.einsum('nbd,ndk->nbk', x, w, )
-        # x = _receive(x, batch_size)
+        x = _dispatch(x, None)
+        x = jnp.einsum('nbd,ndk->nbk', x, w, )
+        x = _receive(x, batch_size)
 
-        x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
+        # x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
         x = einsum(x, combine_weights, 'b n p d,b m n p->b m d')
         return x
 
