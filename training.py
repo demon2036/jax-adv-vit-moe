@@ -28,7 +28,7 @@ def apply_model_trade(state, data, key):
 
         b = d.shape[:2]
 
-        return d.reshape((b, *res))
+        return d.reshape((128,3,32,32))
 
     data = jax.tree_util.tree_map(constraint, data)
 
