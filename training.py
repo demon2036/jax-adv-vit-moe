@@ -25,6 +25,9 @@ def apply_model_trade(state, data, key):
         d = d.reshape((8, 4) + res)
         pspec = jax.sharding.PartitionSpec(('expert', 'replica'))
         d = jax.lax.with_sharding_constraint(d, NamedSharding(pspec))
+
+        b=d.shape[:2]
+
         return d.reshape(b, *res)
 
     data = jax.tree_util.tree_map(constraint, data)
