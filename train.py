@@ -144,14 +144,14 @@ def train_and_evaluate(args):
     eval_step_jit = jax.jit(eval_step,
                             in_shardings=(state_sharding, [x_sharding, x_sharding],),
                             out_shardings=None, )
-
+    data = next(train_dataloader_iter)
     with mesh:
         init_step = 1
         disable = not jax.process_index() == 0
 
         for step in tqdm.tqdm(range(init_step, args.training_steps), initial=init_step, total=args.training_steps,disable=disable):
 
-            data = next(train_dataloader_iter)
+
             # data = jax.tree_util.tree_map(functools.partial(convert_to_global_array, x_sharding=x_sharding), data)
             rng, train_rng = jax.random.split(rng)
 
