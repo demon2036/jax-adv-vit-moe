@@ -160,11 +160,12 @@ def train_and_evaluate(args):
             if jax.process_index() == 0:
                 print(metrics)
 
-            if step % args.log_interval == 0:
-                if jax.process_index() == 0:
-                    average_meter.update(**metrics)
-                    metrics = average_meter.summary('train/')
-                    wandb.log(metrics, step)
+            # if step % args.log_interval == 0:
+            #     metrics = multihost_utils.process_allgather(metrics)
+            #     if jax.process_index() == 0:
+            #         average_meter.update(**metrics)
+            #         metrics = average_meter.summary('train/')
+            #         wandb.log(metrics, step)
             #
             # if step % args.eval_interval == 0:
             #     for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
@@ -185,12 +186,41 @@ def train_and_evaluate(args):
     return eval_metrics
 
 
-def train_and_evaluate_pmap(args):
-    # if jax.process_index() == 0:
-    #     wandb.init(name=args.name, project=args.project, config=args.__dict__,
-    #                settings=wandb.Settings(_disable_stats=True),
-    #                config_exclude_keys=['train_dataset_shards', 'valid_dataset_shards', 'train_origin_dataset_shards'])
-        average_meter = AverageMeter(use_latest=["learning_rate"])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def train_and_evaluate(args):
+    if jax.process_index() == 0:
+        wandb.init(name=args.name, project=args.project, config=args.__dict__,
+                   settings=wandb.Settings(_disable_stats=True),
+                   config_exclude_keys=['train_dataset_shards', 'valid_dataset_shards', 'train_origin_dataset_shards'])
+    average_meter = AverageMeter(use_latest=["learning_rate"])
 
     rng = jax.random.key(0)
 
@@ -261,12 +291,11 @@ def train_and_evaluate_pmap(args):
             if jax.process_index() == 0:
                 print(metrics)
 
-            # if step % args.log_interval == 0:
-            #     metrics = multihost_utils.process_allgather(metrics)
-            #     if jax.process_index() == 0:
-            #         average_meter.update(**metrics)
-            #         metrics = average_meter.summary('train/')
-            #         wandb.log(metrics, step)
+            if step % args.log_interval == 0:
+                if jax.process_index() == 0:
+                    average_meter.update(**metrics)
+                    metrics = average_meter.summary('train/')
+                    wandb.log(metrics, step)
             #
             # if step % args.eval_interval == 0:
             #     for data in tqdm.tqdm(test_dataloader, leave=False, dynamic_ncols=True):
@@ -285,6 +314,9 @@ def train_and_evaluate_pmap(args):
             #         wandb.log(eval_metrics, step)
 
     return eval_metrics
+
+
+
 
 
 if __name__ == "__main__":
