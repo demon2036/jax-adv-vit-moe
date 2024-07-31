@@ -195,7 +195,7 @@ def train_and_evaluate(args):
     rng, init_rng = jax.random.split(rng)
 
     device_count = jax.device_count()
-    experts = device_count
+    experts = device_count//4
     replicate = device_count // experts
     assert replicate * experts == device_count
 
