@@ -19,18 +19,6 @@ EPSILON = 8 / 255  # @param{type:"number"}
 
 
 def apply_model_trade(state, data, key):
-    def constraint(d):
-        b, res = d.shape[0], d.shape[1:]
-
-        d = d.reshape((b // 4, 4) + res)
-        pspec = jax.sharding.PartitionSpec(('experts', 'replicate'))
-        d = jax.lax.with_sharding_constraint(d, pspec)
-
-        b = d.shape[:2]
-
-        return d.reshape((128,3,32,32))
-
-    data = jax.tree_util.tree_map(constraint, data)
 
     images, labels = data
 

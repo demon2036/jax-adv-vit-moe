@@ -208,7 +208,7 @@ def train_and_evaluate(args):
     mesh_x = Mesh(device_mesh, axis_names=('data',))
 
     def mesh_sharding(pspec: PartitionSpec) -> NamedSharding:
-        return NamedSharding(mesh_x, pspec)
+        return NamedSharding(mesh, pspec)
 
     x_sharding = mesh_sharding(PartitionSpec('data'))
 
