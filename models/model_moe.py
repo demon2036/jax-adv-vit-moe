@@ -345,10 +345,10 @@ class ViTLayer(ViTBase, nn.Module):
 
         for i in range(6):
 
-            print(x.shape)
+            # print(x.shape)
 
             norm = nn.LayerNorm()
-            mha = Attention()
+            mha = Attention(**self.kwargs)
 
             x = x + mha(norm(x))
             # x = x + norm(x)
