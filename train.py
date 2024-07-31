@@ -202,6 +202,9 @@ def train_and_evaluate(args):
     device_mesh = mesh_utils.create_device_mesh((experts, replicate))
     mesh = Mesh(device_mesh, axis_names=('experts', 'replicate'))
 
+    sharding= NamedSharding(mesh, PartitionSpec('experts', 'replicate'))
+
+
     device_mesh_data = mesh_utils.create_device_mesh((device_count,))
     mesh_data = Mesh(device_mesh_data, axis_names=('data', ))
 
@@ -216,7 +219,7 @@ def train_and_evaluate(args):
                                                                   origin_shard_path=args.train_origin_dataset_shards)
 
     train_dataloader_iter = prefetch_to_device(train_dataloader_iter, 2, x_sharding)
-    state, state_sharding = create_train_state(init_rng, x_sharding, mesh,
+    state, state_sharding = create_train_state(init_rng, sharding, mesh,
                                                layers=args.layers,
                                                dim=args.dim,
                                                heads=args.heads,
