@@ -198,10 +198,10 @@ def compute_capacity(
     return capacity
 
 
-class SoftRouter(nn.Module):
+class SoftRouter(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
     dim: int
-    num_experts: int = 128
+    num_experts: int = 32
     num_slots: Optional[int] = None
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
@@ -259,15 +259,23 @@ class SoftRouter(nn.Module):
 
         # w = self.param('w', self.expert_init, (self.num_experts, dim, self.dim))
 
-        w = self.param(f'w', nn.with_partitioning(self.expert_init, ('data',)),
-                       (self.num_experts, dim, self.dim))
+        w1 = self.param('w1', nn.with_partitioning(self.expert_init, ('experts',)),
+                        (self.num_experts, dim, self.hidden_dim))
+
+        w2 = self.param('w2', nn.with_partitioning(self.expert_init, ('experts',)),
+                        (self.num_experts, self.hidden_dim, self.dim))
 
         # print(inputs.shape,dispatch_weights.shape)
 
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
 
         x = _dispatch(x, None)
-        x = jnp.einsum('nbd,ndk->nbk', x, w, )
+        # x = jnp.einsum('nbd,ndk->nbk', x, w, )
+
+        x = jnp.einsum('nbd,ndk->nbk', x, w1, )
+        x = nn.gelu(x)
+        x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+
         x = _receive(x, batch_size)
 
         # x = einsum(x, w, 'b n p d1,n d1 d2->b n p d2')
@@ -559,19 +567,21 @@ class ViTLayer(ViTBase, nn.Module):
                 x = nn.gelu(x)
                 x = nn.Dense(dim)(x)
             else:
-                w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('experts',)),
-                               (self.num_experts, dim, 4 * dim))
+                # w = self.param(f'w_{i}', nn.with_partitioning(self.expert_init, ('experts',)),
+                #                (self.num_experts, dim, 4 * dim))
+                #
+                # w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('experts',)),
+                #                 (self.num_experts, 4 * dim, dim))
+                #
+                # x = _dispatch(x, None)
+                # # x = jnp.einsum('bnd,ndk->bnk', x, w, )
+                # x = jnp.einsum('nbd,ndk->nbk', x, w, )
+                # x = nn.gelu(x)
+                # x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+                #
+                # x = _receive(x, batch_size)
 
-                w2 = self.param(f'w2_{i}', nn.with_partitioning(self.expert_init, ('experts',)),
-                                (self.num_experts, 4 * dim, dim))
-
-                x = _dispatch(x, None)
-                # x = jnp.einsum('bnd,ndk->bnk', x, w, )
-                x = jnp.einsum('nbd,ndk->nbk', x, w, )
-                x = nn.gelu(x)
-                x = jnp.einsum('nbd,ndk->nbk', x, w2, )
-
-                x = _receive(x, batch_size)
+                x = SoftRouter()(x)
 
             x = x + y
 
