@@ -41,7 +41,7 @@ CeilOrRound = Literal["ceil", "round"]
 
 def _dispatch(data: Array, partition_spec: Optional[PartitionSpec]) -> Array:
     """Dispatches data to experts using all_to_all."""
-    partition_spec = PartitionSpec('data', )
+    partition_spec = PartitionSpec('experts', 'replicate')
     partition_spec = _convert_partition_spec(partition_spec)
     # partition_spec = mesh_sharding(partition_spec)
     num_groups, num_experts, capacity, *item_shape = data.shape
@@ -59,7 +59,7 @@ def _dispatch(data: Array, partition_spec: Optional[PartitionSpec]) -> Array:
 def _receive(data: Array, num_groups: int,
              partition_spec: Optional[PartitionSpec] = None) -> Array:
     """Receives data from experts using all_to_all."""
-    partition_spec = ('data',)
+    partition_spec = ('experts', 'replicate')
     partition_spec = _convert_partition_spec(partition_spec)
     # partition_spec = mesh_sharding(partition_spec)
 
