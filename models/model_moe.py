@@ -144,6 +144,7 @@ class ViTBase:
     polynomial_degree: int = 8
 
     use_moe: bool = False
+
     # dtype: Any = jnp.bfloat16
 
     @property
@@ -271,11 +272,19 @@ class SoftRouter(ViTBase, nn.Module):
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
 
         x = _dispatch(x, None)
+
         # x = jnp.einsum('nbd,ndk->nbk', x, w, )
 
-        x = jnp.einsum('nbd,ndk->nbk', x, w1, )
-        x = nn.gelu(x)
-        x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+        def dot(x, w1, w2):
+            return nn.gelu((x @ w1)) @ w2
+
+
+        x=jax.vmap(dot)(x,w1,w2)
+
+
+        # x = jnp.einsum('nbd,ndk->nbk', x, w1, )
+        # x = nn.gelu(x)
+        # x = jnp.einsum('nbd,ndk->nbk', x, w2, )
 
         x = _receive(x, batch_size)
 
