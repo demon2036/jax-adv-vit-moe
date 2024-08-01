@@ -20,8 +20,8 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 from optax.losses import softmax_cross_entropy_with_integer_labels
-from models.model_moe import ViT
-
+# from models.model_moe import ViT
+from models.model_moe_mod import ViT
 import os
 
 from prefetch import convert_to_global_array
