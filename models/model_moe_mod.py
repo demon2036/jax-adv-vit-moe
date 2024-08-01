@@ -172,7 +172,7 @@ class SoftRouter(ViTBase, nn.Module):
     precision: jax.lax.Precision = jax.lax.Precision.DEFAULT
 
     @nn.compact
-    def __call__(self, inputs: Array):
+    def __call__(self, inputs: Array, det: bool = True):
 
         # y = nn.Dense(self.dim)(inputs)
 
