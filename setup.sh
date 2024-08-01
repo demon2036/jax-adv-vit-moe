@@ -17,10 +17,10 @@ rm -rf ~/miniconda3
 wget https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 
 
-#wget https://repo.anaconda.com/miniconda/Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
-#bash Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
-bash Miniconda3-py310_24.1.2-0-Linux-x86_64.sh -b -u
-rm Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
+bash Miniconda3-py311_24.5.0-0-Linux-x86_64.sh -b -u
+#bash Miniconda3-py310_24.1.2-0-Linux-x86_64.sh -b -u
+#rm Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 
 ~/miniconda3/bin/conda init bash
 eval "$(~/miniconda3/bin/conda shell.bash hook)"
@@ -28,11 +28,11 @@ eval "$(~/miniconda3/bin/conda shell.bash hook)"
 
 # 2. Install requirements.
 pip install -U jax[tpu] -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-#pip install -U torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-#pip install -U flax optax chex webdataset timm wandb
-#pip install einops gcsfs tensorflow
+pip install -U torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install -U flax optax chex webdataset timm wandb
+pip install einops gcsfs tensorflow
 #
-## 3. Install Pillow-SIMD.
-#conda install -c conda-forge -y libjpeg-turbo
-#pip uninstall -y pillow
-#CC="cc -mavx2" pip install -U --force-reinstall pillow-simd
+# 3. Install Pillow-SIMD.
+conda install -c conda-forge -y libjpeg-turbo
+pip uninstall -y pillow
+CC="cc -mavx2" pip install -U --force-reinstall pillow-simd
