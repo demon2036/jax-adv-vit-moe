@@ -431,7 +431,7 @@ class ViT(ViTBase, nn.Module):
         # #
         self.layer = [layer_fn(**self.kwargs ,use_moe =False if i<8 else True) for i in range(self.layers)]
 
-        self.layer = ViTLayer(**self.kwargs)
+        # self.layer = ViTLayer(**self.kwargs)
 
         # self.norm = nn.LayerNorm()
 
