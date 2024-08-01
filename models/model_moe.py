@@ -269,6 +269,7 @@ class SoftRouter(ViTBase, nn.Module):
         # print(inputs.shape,dispatch_weights.shape)
 
         x = einsum(inputs, dispatch_weights, 'b m d, b m n p->b n p d')
+        print(x.dtype)
 
         x = _dispatch(x, None)
         # x = jnp.einsum('nbd,ndk->nbk', x, w, )
