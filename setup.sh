@@ -14,13 +14,13 @@
 
 # 1. Install miniconda3 (with removing legacy).
 rm -rf ~/miniconda3
-#wget https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 
 
-wget https://repo.anaconda.com/miniconda/Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
-bash Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
-#bash Miniconda3-py310_24.1.2-0-Linux-x86_64.sh -b -u
-#rm Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
+#wget https://repo.anaconda.com/miniconda/Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
+#bash Miniconda3-py311_24.5.0-0-Linux-x86_64.sh
+bash Miniconda3-py310_24.1.2-0-Linux-x86_64.sh -b -u
+rm Miniconda3-py310_24.1.2-0-Linux-x86_64.sh
 
 ~/miniconda3/bin/conda init bash
 eval "$(~/miniconda3/bin/conda shell.bash hook)"
