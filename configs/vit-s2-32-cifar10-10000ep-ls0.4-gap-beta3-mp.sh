@@ -8,7 +8,7 @@ python -u train.py \
     --train-origin-dataset-shards "$GCS_DATASET_DIR/cifar10-train-wds/shards-{00000..00099}.tar" \
     --layers 12  \
     --dim 384  \
-    --heads 6  \
+    --heads 3  \
     --labels 10  \
     --layerscale   \
     --patch-size 2  \

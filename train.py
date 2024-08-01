@@ -334,7 +334,7 @@ if __name__ == "__main__":
     parser.add_argument("--droppath", type=float, default=0.1)
     parser.add_argument("--grad-ckpt", action="store_true", default=False)
     parser.add_argument("--use-fc-norm", action="store_true", default=False)
-    parser.add_argument("--reduce_include_prefix", action="store_true", default=False)
+    parser.add_argument("--reduce_include_prefix", action="store_true", default=True)
 
     # parser.add_argument("--init-seed", type=int, default=random.randint(0, 1000000))
     # parser.add_argument("--mixup-seed", type=int, default=random.randint(0, 1000000))
