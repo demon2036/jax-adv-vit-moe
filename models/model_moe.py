@@ -275,16 +275,15 @@ class SoftRouter(ViTBase, nn.Module):
 
         # x = jnp.einsum('nbd,ndk->nbk', x, w, )
 
-        def dot(x, w1, w2):
-            return nn.gelu((x @ w1)) @ w2
+        # def dot(x, w1, w2):
+        #     return nn.gelu((x @ w1)) @ w2
+        #
+        #
+        # x=jax.vmap(dot)(x,w1,w2)
 
-
-        x=jax.vmap(dot)(x,w1,w2)
-
-
-        # x = jnp.einsum('nbd,ndk->nbk', x, w1, )
-        # x = nn.gelu(x)
-        # x = jnp.einsum('nbd,ndk->nbk', x, w2, )
+        x = jnp.einsum('nbd,ndk->nbk', x, w1, )
+        x = nn.gelu(x)
+        x = jnp.einsum('nbd,ndk->nbk', x, w2, )
 
         x = _receive(x, batch_size)
 
@@ -316,8 +315,8 @@ class PatchEmbed(ViTBase, nn.Module):
     def __call__(self, x: Array) -> Array:
         x = (self.wte(x) + self.wpe).reshape(x.shape[0], -1, self.dim)
         # if self.pooling == "cls":
-        # cls_token = jnp.repeat(self.cls_token, x.shape[0], axis=0)
-        # x = jnp.concatenate((cls_token, x), axis=1)
+        cls_token = jnp.repeat(self.cls_token, x.shape[0], axis=0)
+        x = jnp.concatenate((cls_token, x), axis=1)
         return x
 
 
