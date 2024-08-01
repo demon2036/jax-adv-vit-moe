@@ -3,11 +3,6 @@ import functools
 import time
 
 import jax
-
-
-
-
-
 import jax.numpy as jnp
 import numpy as np
 import tqdm
@@ -301,10 +296,6 @@ def train_and_evaluate(args):
 
 
 if __name__ == "__main__":
-
-
-
-
     jax.config.update('jax_threefry_partitionable', True)
     jax.distributed.initialize()
 
