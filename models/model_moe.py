@@ -203,7 +203,7 @@ class SoftRouter(ViTBase, nn.Module):
     """Soft router merging tokens as inputs/outputs of the experts."""
     dim: int
     num_experts: int = 128
-    num_slots: Optional[int] = 128
+    num_slots: Optional[int] = 1
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
     deterministic: bool = False
