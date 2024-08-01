@@ -207,7 +207,7 @@ class SoftRouter(ViTBase, nn.Module):
     capacity_factor: Optional[float] = 1.0
     noise_std: float = 0.0
     deterministic: bool = False
-    dtype: Optional[DType] = None
+    dtype: Optional[DType] = jnp.bfloat16
     mu_init: Initializer = jax.nn.initializers.lecun_normal()
     expert_init: Initializer = init.truncated_normal(0.02 / 10)
     scale_init: Initializer = jax.nn.initializers.ones
@@ -261,10 +261,10 @@ class SoftRouter(ViTBase, nn.Module):
         # w = self.param('w', self.expert_init, (self.num_experts, dim, self.dim))
 
         w1 = self.param('kernel1', nn.with_partitioning(self.expert_init, ('experts',)),
-                        (self.num_experts, dim, self.hidden_dim))
+                        (self.num_experts, dim, self.hidden_dim)).astype(dtype)
 
         w2 = self.param('kernel2', nn.with_partitioning(self.expert_init, ('experts',)),
-                        (self.num_experts, self.hidden_dim, self.dim))
+                        (self.num_experts, self.hidden_dim, self.dim)).astype(dtype)
 
         # print(inputs.shape,dispatch_weights.shape)
 
