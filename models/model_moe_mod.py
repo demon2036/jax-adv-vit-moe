@@ -428,7 +428,7 @@ class ViT(ViTBase, nn.Module):
         # The layer class should be wrapped with `nn.remat` if `grad_ckpt` is enabled.
         layer_fn = nn.remat(ViTLayer) if self.grad_ckpt else ViTLayer
         # #
-        self.layer = [layer_fn(**self.kwargs ,use_moe =False if i<8 else True) for i in range(self.layers)]
+        self.layer = [layer_fn(**(self.kwargs | {'use_moe': False if i < 8 else True})) for i in range(self.layers)]
 
         # self.layer = ViTLayer(**self.kwargs)
 
