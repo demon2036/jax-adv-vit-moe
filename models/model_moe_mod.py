@@ -98,8 +98,7 @@ class ViTBase:
     dropout: float = 0.0
     droppath: float = 0.0
     grad_ckpt: bool = False
-    use_kan: bool = False
-    polynomial_degree: int = 8
+    use_moe: bool = False
 
 
 
@@ -316,7 +315,7 @@ class FeedForward(ViTBase, nn.Module):
 
 
 class ViTLayer(ViTBase, nn.Module):
-    use_moe: bool = False
+
     def setup(self):
         self.attn = Attention(**self.kwargs)
 
