@@ -1,4 +1,4 @@
-export EPOCH=10000 TRAIN_BATCH_SIZE=1024 WARMUP_EPOCH=200
+export EPOCH=10000 TRAIN_BATCH_SIZE=4096 WARMUP_EPOCH=200
 export LIBTPU_INIT_ARGS="--xla_tpu_enable_data_parallel_all_reduce_opt=true --xla_tpu_data_parallel_opt_different_sized_ops=true --xla_tpu_enable_async_collective_fusion=true --xla_tpu_enable_async_collective_fusion_fuse_all_gather=true --xla_tpu_enable_async_collective_fusion_multiple_steps=true --xla_tpu_overlap_compute_collective_tc=true --xla_enable_async_all_gather=true"
 
 
@@ -18,11 +18,11 @@ python -u train.py \
     --dropout 0.0  \
     --droppath 0.0  \
     --train-batch-size $TRAIN_BATCH_SIZE \
-    --learning-rate 1e-4 \
-    --weight-decay 0.05 \
+    --learning-rate 4e-4 \
+    --weight-decay 0.5 \
     --adam-b1 0.9 \
     --adam-b2 0.99 \
-    --clip-grad 10.0 \
+    --clip-grad 1.0 \
     --warmup-steps $((50000 * $WARMUP_EPOCH / $TRAIN_BATCH_SIZE)) \
     --training-steps $((50000 * $EPOCH / $TRAIN_BATCH_SIZE)) \
     --eval-interval $((50000 * 200 / $TRAIN_BATCH_SIZE)) \
